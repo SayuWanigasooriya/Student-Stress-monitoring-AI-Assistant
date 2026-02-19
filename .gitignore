@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+
+# Spring Boot
+target/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
