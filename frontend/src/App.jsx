@@ -1,8 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Header from "./components/Header";
+import QuestionCard from "./components/QuestionCard";
+import ResultCard from "./components/ResultCard";
+import TopicListCard from "./components/TopicListCard";
+import { styles } from "./styles";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function App() {
+    const hasInitializedHistory = useRef(false);
+    const isRestoringHistory = useRef(false);
+    const lastHistoryKey = useRef("");
+
     // user id (dynamic)
     const [userId, setUserId] = useState(() => localStorage.getItem("tg_userId") || "");
     const [userIdDraft, setUserIdDraft] = useState(userId);
@@ -20,6 +29,13 @@ export default function App() {
 
     // final result
     const [finalResult, setFinalResult] = useState(null);
+    const [showChat, setShowChat] = useState(false);
+
+    // chat state
+    const [chatInput, setChatInput] = useState("");
+    const [chatMessages, setChatMessages] = useState([]);
+    const [chatSessionId, setChatSessionId] = useState(null);
+    const [chatSending, setChatSending] = useState(false);
 
     // ui state
     const [busy, setBusy] = useState(false);
@@ -43,7 +59,7 @@ export default function App() {
         })();
     }, []);
 
-    // Try to parse optionsJson safely
+    // Questions can store their options as JSON, so we parse once whenever the question changes.
     const parsedOptions = useMemo(() => {
         if (!question?.optionsJson) return null;
         try {
@@ -56,9 +72,7 @@ export default function App() {
     const totalStepsForCurrentTopic = useMemo(() => {
         if (!question) return null;
         const t = topics.find((x) => x.id === question.topicId);
-        // if backend provides this, great:
         if (t && typeof t.totalSteps === "number") return t.totalSteps;
-        // fallback unknown:
         return null;
     }, [question, topics]);
 
@@ -67,6 +81,93 @@ export default function App() {
         if (!totalStepsForCurrentTopic) return 0;
         return Math.min(100, Math.round((question.stepNo / totalStepsForCurrentTopic) * 100));
     }, [question, totalStepsForCurrentTopic]);
+
+    // Only push a new browser-history entry when the app moves to a meaningful new view/state.
+    const historySyncKey = useMemo(() => JSON.stringify({
+        screen: question ? "question" : finalResult ? "result" : "home",
+        sessionId,
+        questionId: question?.questionId ?? null,
+        finalSummary: finalResult?.summary ?? null,
+        showChat,
+        chatSessionId,
+        chatMessagesCount: chatMessages.length,
+    }), [sessionId, question, finalResult, showChat, chatSessionId, chatMessages.length]);
+
+    useEffect(() => {
+        const handlePopState = (event) => {
+            const snapshot = event.state?.appSnapshot;
+            if (!snapshot) return;
+
+            isRestoringHistory.current = true;
+
+            setUserId(snapshot.userId ?? "");
+            setUserIdDraft(snapshot.userIdDraft ?? snapshot.userId ?? "");
+            setSessionId(snapshot.sessionId ?? null);
+            setQuestion(snapshot.question ?? null);
+            setSelectedAnswer(snapshot.selectedAnswer ?? "");
+            setTextAnswer(snapshot.textAnswer ?? "");
+            setScaleAnswer(snapshot.scaleAnswer ?? 3);
+            setFinalResult(snapshot.finalResult ?? null);
+            setShowChat(snapshot.showChat ?? false);
+            setChatInput(snapshot.chatInput ?? "");
+            setChatMessages(snapshot.chatMessages ?? []);
+            setChatSessionId(snapshot.chatSessionId ?? null);
+            setChatSending(false);
+            setError("");
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
+
+    useEffect(() => {
+        const snapshot = {
+            userId,
+            userIdDraft,
+            sessionId,
+            question,
+            selectedAnswer,
+            textAnswer,
+            scaleAnswer,
+            finalResult,
+            showChat,
+            chatInput,
+            chatMessages,
+            chatSessionId,
+        };
+
+        if (!hasInitializedHistory.current) {
+            window.history.replaceState({ appSnapshot: snapshot }, "");
+            hasInitializedHistory.current = true;
+            lastHistoryKey.current = historySyncKey;
+            return;
+        }
+
+        if (isRestoringHistory.current) {
+            lastHistoryKey.current = historySyncKey;
+            isRestoringHistory.current = false;
+            return;
+        }
+
+        if (historySyncKey !== lastHistoryKey.current) {
+            window.history.pushState({ appSnapshot: snapshot }, "");
+            lastHistoryKey.current = historySyncKey;
+        }
+    }, [
+        userId,
+        userIdDraft,
+        sessionId,
+        question,
+        selectedAnswer,
+        textAnswer,
+        scaleAnswer,
+        finalResult,
+        showChat,
+        chatInput,
+        chatMessages,
+        chatSessionId,
+        historySyncKey,
+    ]);
 
     const saveUserId = () => {
         const v = userIdDraft.trim();
@@ -83,7 +184,14 @@ export default function App() {
         try {
             setBusy(true);
             setError("");
+
+            // Starting a new guided session should clear any previous result/chat state.
             setFinalResult(null);
+            setShowChat(false);
+            setChatInput("");
+            setChatMessages([]);
+            setChatSessionId(null);
+            setChatSending(false);
 
             const uid = userId.trim();
             if (!uid) {
@@ -116,7 +224,7 @@ export default function App() {
     const submitAnswer = async () => {
         if (!sessionId || !question) return;
 
-        // pick correct payload by question type
+        // Convert the current UI control value into the single answer format expected by the backend.
         let answerValue = "";
         if (question.type === "MCQ" || question.type === "YES_NO") {
             answerValue = selectedAnswer;
@@ -147,11 +255,11 @@ export default function App() {
 
             const data = await res.json();
 
-            // reset input for next
             setSelectedAnswer("");
             setTextAnswer("");
             setScaleAnswer(3);
 
+            // A session either moves to the next question or ends with a final summary/result.
             if (data.finalResult) {
                 setFinalResult(data.finalResult);
                 setQuestion(null);
@@ -159,7 +267,6 @@ export default function App() {
             } else if (data.nextQuestion) {
                 setQuestion(data.nextQuestion);
             } else {
-                // If backend ends without finalResult
                 setFinalResult({ summary: "Session completed.", recommendations: [] });
                 setQuestion(null);
                 setSessionId(null);
@@ -171,6 +278,76 @@ export default function App() {
         }
     };
 
+    const openChat = async () => {
+        try {
+            setError("");
+
+            // Reuse the topic from the final result so the follow-up chat stays in the same support area.
+            const topicCode =
+                finalResult?.topicCode ||
+                finalResult?.topicId ||
+                "ACADEMIC_STRESS";
+
+            const res = await fetch(`${API_BASE}/api/chat/session`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topicCode }),
+            });
+
+            if (!res.ok) throw new Error(`Failed to create chat session (${res.status})`);
+
+            const data = await res.json();
+
+            setChatSessionId(data.sessionId);
+            setShowChat(true);
+            setChatInput("");
+            setChatMessages([
+                { sender: "bot", message: "Hello. I can continue helping you with this topic." }
+            ]);
+        } catch (e) {
+            setError(e.message || "Failed to open chat");
+        }
+    };
+
+    const sendChatMessage = async () => {
+        if (!chatInput.trim() || !chatSessionId || chatSending) return;
+
+        const userMessage = chatInput.trim();
+
+        // Show the user's message immediately, then append the bot reply when the API call completes.
+        setChatMessages((prev) => [
+            ...prev,
+            { sender: "user", message: userMessage }
+        ]);
+        setChatInput("");
+        setChatSending(true);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/chat/message`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sessionId: String(chatSessionId),
+                    message: userMessage,
+                    summary: finalResult,
+                }),
+            });
+
+            if (!res.ok) throw new Error(`Failed to send message (${res.status})`);
+
+            const data = await res.json();
+
+            setChatMessages((prev) => [
+                ...prev,
+                { sender: "bot", message: data.reply }
+            ]);
+        } catch (e) {
+            setError(e.message || "Failed to send chat message");
+        } finally {
+            setChatSending(false);
+        }
+    };
+
     const resetAll = () => {
         setSessionId(null);
         setQuestion(null);
@@ -178,369 +355,100 @@ export default function App() {
         setSelectedAnswer("");
         setTextAnswer("");
         setScaleAnswer(3);
+        setShowChat(false);
+        setChatInput("");
+        setChatMessages([]);
+        setChatSessionId(null);
+        setChatSending(false);
         setError("");
     };
 
-    return (
-        <div style={styles.page}>
-            <div style={styles.container}>
-                <header style={styles.header}>
-                    <div>
-                        <h1 style={styles.title}>Topic Guidance</h1>
-                        <p style={styles.subTitle}>Guided conversations • step-by-step • stored in MySQL</p>
-                    </div>
+    const isHomeScreen = !question && !finalResult;
 
-                    <div style={styles.userBox}>
-                        <input
-                            style={styles.input}
-                            placeholder="User ID (e.g., user-001)"
-                            value={userIdDraft}
-                            onChange={(e) => setUserIdDraft(e.target.value)}
-                        />
-                        <button style={styles.btn} onClick={saveUserId} disabled={busy}>
-                            Save
-                        </button>
-                    </div>
-                </header>
+    return (
+        <div style={styles.page} className="app-shell">
+            <div className="app-orb app-orb-left" />
+            <div className="app-orb app-orb-right" />
+
+            <div style={styles.container} className="app-container">
+                <Header
+                    userIdDraft={userIdDraft}
+                    setUserIdDraft={setUserIdDraft}
+                    saveUserId={saveUserId}
+                    busy={busy}
+                />
 
                 {error && <div style={styles.error}>{error}</div>}
 
-                {/* If currently answering a question */}
+                {isHomeScreen && (
+                    <section className="hero-panel">
+                        <div>
+                            <p className="eyebrow">Support Space</p>
+                            <h2 className="hero-title">Start with a topic, reflect step by step, and continue with helpful guidance.</h2>
+                            <p className="hero-copy">
+                                Choose the area you want support with and move through the conversation at your own pace.
+                            </p>
+                        </div>
+
+                        <div className="hero-stats">
+                            <div className="hero-stat-card">
+                                <span className="hero-stat-label">Topics</span>
+                                <strong>{topics.length}</strong>
+                            </div>
+                            <div className="hero-stat-card">
+                                <span className="hero-stat-label">Current User</span>
+                                <strong>{userId || "Set your ID to begin"}</strong>
+                            </div>
+                            <div className="hero-stat-card">
+                                <span className="hero-stat-label">What You Get</span>
+                                <strong>Guided steps and follow-up chat</strong>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 {question && (
-                    <div style={styles.card}>
-                        <div style={styles.cardTop}>
-                            <div>
-                                <div style={styles.badge}>{question.topicId}</div>
-                                <h2 style={styles.cardTitle}>{question.text}</h2>
-                            </div>
-
-                            <button style={styles.btnGhost} onClick={resetAll} disabled={busy}>
-                                Exit
-                            </button>
-                        </div>
-
-                        {/* Progress */}
-                        <div style={{ marginTop: 16 }}>
-                            <div style={styles.progressRow}>
-                <span style={styles.muted}>
-                  Step <b>{question.stepNo}</b>
-                    {totalStepsForCurrentTopic ? (
-                        <>
-                            {" "}
-                            / <b>{totalStepsForCurrentTopic}</b>
-                        </>
-                    ) : null}
-                </span>
-                                {totalStepsForCurrentTopic ? <span style={styles.muted}>{progressPct}%</span> : null}
-                            </div>
-                            <div style={styles.progressBar}>
-                                <div
-                                    style={{
-                                        ...styles.progressFill,
-                                        width: totalStepsForCurrentTopic ? `${progressPct}%` : "20%",
-                                        opacity: totalStepsForCurrentTopic ? 1 : 0.5,
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Render input by type */}
-                        <div style={{ marginTop: 18 }}>
-                            {(question.type === "MCQ" || question.type === "YES_NO") && Array.isArray(parsedOptions) && (
-                                <div style={styles.optionGrid}>
-                                    {parsedOptions.map((opt) => {
-                                        const active = selectedAnswer === opt;
-                                        return (
-                                            <button
-                                                key={opt}
-                                                style={{ ...styles.optionBtn, ...(active ? styles.optionBtnActive : {}) }}
-                                                onClick={() => setSelectedAnswer(opt)}
-                                                disabled={busy}
-                                            >
-                                                {opt}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {question.type === "TEXT" && (
-                                <textarea
-                                    style={styles.textarea}
-                                    rows={4}
-                                    value={textAnswer}
-                                    onChange={(e) => setTextAnswer(e.target.value)}
-                                    placeholder="Type your answer..."
-                                    disabled={busy}
-                                />
-                            )}
-
-                            {question.type === "SCALE" && parsedOptions && typeof parsedOptions === "object" && (
-                                <div style={{ marginTop: 6 }}>
-                                    <div style={styles.scaleRow}>
-                                        <span style={styles.muted}>Low</span>
-                                        <span style={{ fontWeight: 800, fontSize: 20 }}>{scaleAnswer}</span>
-                                        <span style={styles.muted}>High</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min={parsedOptions.min ?? 1}
-                                        max={parsedOptions.max ?? 5}
-                                        value={scaleAnswer}
-                                        onChange={(e) => setScaleAnswer(Number(e.target.value))}
-                                        style={styles.slider}
-                                        disabled={busy}
-                                    />
-                                </div>
-                            )}
-
-                            {/* fallback if optionsJson is missing/invalid */}
-                            {(question.type === "MCQ" || question.type === "YES_NO") && !Array.isArray(parsedOptions) && (
-                                <input
-                                    style={styles.inputWide}
-                                    placeholder="Type your answer..."
-                                    value={selectedAnswer}
-                                    onChange={(e) => setSelectedAnswer(e.target.value)}
-                                    disabled={busy}
-                                />
-                            )}
-                        </div>
-
-                        <div style={styles.cardActions}>
-                            <button style={styles.btnPrimary} onClick={submitAnswer} disabled={busy}>
-                                {busy ? "Sending..." : "Next"}
-                            </button>
-                        </div>
-                    </div>
+                    <QuestionCard
+                        question={question}
+                        totalStepsForCurrentTopic={totalStepsForCurrentTopic}
+                        progressPct={progressPct}
+                        parsedOptions={parsedOptions}
+                        selectedAnswer={selectedAnswer}
+                        setSelectedAnswer={setSelectedAnswer}
+                        textAnswer={textAnswer}
+                        setTextAnswer={setTextAnswer}
+                        scaleAnswer={scaleAnswer}
+                        setScaleAnswer={setScaleAnswer}
+                        submitAnswer={submitAnswer}
+                        resetAll={resetAll}
+                        busy={busy}
+                    />
                 )}
 
-                {/* Final Result */}
                 {finalResult && (
-                    <div style={styles.card}>
-                        <div style={styles.cardTop}>
-                            <div>
-                                <div style={styles.badge}>RESULT</div>
-                                <h2 style={styles.cardTitle}>Your Guidance Summary</h2>
-                            </div>
-                            <button style={styles.btnGhost} onClick={resetAll}>
-                                New Session
-                            </button>
-                        </div>
-
-                        {finalResult.summary && <p style={{ marginTop: 10, lineHeight: 1.6 }}>{finalResult.summary}</p>}
-
-                        {finalResult.impactLevel && (
-                            <div style={{ marginTop: 10 }}>
-                                <span style={styles.muted}>Impact Level: </span>
-                                <b>{finalResult.impactLevel}</b>
-                            </div>
-                        )}
-
-                        {Array.isArray(finalResult.recommendations) && finalResult.recommendations.length > 0 && (
-                            <div style={{ marginTop: 14 }}>
-                                <h3 style={{ marginBottom: 8 }}>Recommendations</h3>
-                                <ul style={{ marginTop: 0 }}>
-                                    {finalResult.recommendations.map((r, idx) => (
-                                        <li key={idx} style={{ marginBottom: 6 }}>
-                                            {r}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
+                    <ResultCard
+                        finalResult={finalResult}
+                        showChat={showChat}
+                        openChat={openChat}
+                        resetAll={resetAll}
+                        chatMessages={chatMessages}
+                        chatInput={chatInput}
+                        setChatInput={setChatInput}
+                        sendChatMessage={sendChatMessage}
+                        chatSending={chatSending}
+                    />
                 )}
 
-                {/* Topics list (home) */}
-                {!question && !finalResult && (
-                    <div style={styles.card}>
-                        <div style={styles.cardTop}>
-                            <div>
-                                <div style={styles.badge}>TOPICS</div>
-                                <h2 style={styles.cardTitle}>Choose a topic to begin</h2>
-                            </div>
-                        </div>
-
-                        {loadingTopics ? (
-                            <p style={styles.muted}>Loading topics…</p>
-                        ) : (
-                            <div style={styles.topicList}>
-                                {topics.map((t) => (
-                                    <div key={t.id} style={styles.topicItem}>
-                                        <div>
-                                            <div style={styles.topicName}>{t.name}</div>
-                                            <div style={styles.topicDesc}>{t.description}</div>
-                                            <div style={styles.topicId}>{t.id}</div>
-                                        </div>
-                                        <button style={styles.btnPrimary} onClick={() => startSession(t.id)} disabled={busy || !userId}>
-                                            Start
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                {isHomeScreen && (
+                    <TopicListCard
+                        loadingTopics={loadingTopics}
+                        topics={topics}
+                        startSession={startSession}
+                        busy={busy}
+                        userId={userId}
+                    />
                 )}
-
-                <footer style={styles.footer}>
-                    <span style={styles.muted}>Backend: {API_BASE} • Frontend: Vite</span>
-                </footer>
             </div>
         </div>
     );
 }
-
-const styles = {
-    page: {
-        minHeight: "100vh",
-        background: "#0b0c10",
-        color: "#eaeaea",
-        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
-        padding: 24,
-    },
-    container: { maxWidth: 1200, margin: "0 auto" },
-    header: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        gap: 16,
-        marginBottom: 18,
-    },
-    title: { margin: 0, fontSize: 44, letterSpacing: -1 },
-    subTitle: { margin: "6px 0 0", opacity: 0.75 },
-    userBox: { display: "flex", gap: 10, alignItems: "center" },
-
-    card: {
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 16,
-        padding: 18,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-    },
-    cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
-    cardTitle: { margin: "8px 0 0", fontSize: 22 },
-
-    badge: {
-        display: "inline-block",
-        padding: "4px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        letterSpacing: 0.6,
-        background: "rgba(120, 120, 255, 0.18)",
-        border: "1px solid rgba(120, 120, 255, 0.35)",
-    },
-
-    input: {
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        color: "#fff",
-        padding: "10px 12px",
-        borderRadius: 10,
-        outline: "none",
-        width: 220,
-    },
-    inputWide: {
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        color: "#fff",
-        padding: "12px 12px",
-        borderRadius: 10,
-        outline: "none",
-        width: "100%",
-    },
-    textarea: {
-        width: "100%",
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        color: "#fff",
-        padding: "12px 12px",
-        borderRadius: 10,
-        outline: "none",
-        resize: "vertical",
-    },
-
-    btn: {
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        color: "#fff",
-        padding: "10px 14px",
-        borderRadius: 10,
-        cursor: "pointer",
-    },
-    btnPrimary: {
-        background: "linear-gradient(135deg, rgba(132,94,247,1), rgba(66,193,255,1))",
-        border: "none",
-        color: "#0b0c10",
-        padding: "10px 14px",
-        borderRadius: 10,
-        cursor: "pointer",
-        fontWeight: 800,
-    },
-    btnGhost: {
-        background: "transparent",
-        border: "1px solid rgba(255,255,255,0.15)",
-        color: "#fff",
-        padding: "8px 12px",
-        borderRadius: 10,
-        cursor: "pointer",
-    },
-
-    optionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 },
-    optionBtn: {
-        textAlign: "left",
-        padding: "12px 12px",
-        borderRadius: 12,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.05)",
-        color: "#fff",
-        cursor: "pointer",
-    },
-    optionBtnActive: {
-        border: "1px solid rgba(66,193,255,0.65)",
-        background: "rgba(66,193,255,0.14)",
-    },
-
-    scaleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-    slider: { width: "100%" },
-
-    cardActions: { marginTop: 16, display: "flex", justifyContent: "flex-end" },
-
-    progressRow: { display: "flex", justifyContent: "space-between", marginBottom: 8 },
-    progressBar: {
-        width: "100%",
-        height: 10,
-        borderRadius: 999,
-        background: "rgba(255,255,255,0.08)",
-        overflow: "hidden",
-    },
-    progressFill: {
-        height: "100%",
-        borderRadius: 999,
-        background: "linear-gradient(135deg, rgba(132,94,247,1), rgba(66,193,255,1))",
-    },
-
-    topicList: { display: "grid", gap: 12, marginTop: 10 },
-    topicItem: {
-        display: "flex",
-        justifyContent: "space-between",
-        gap: 14,
-        padding: 14,
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.03)",
-        alignItems: "center",
-    },
-    topicName: { fontSize: 18, fontWeight: 800 },
-    topicDesc: { opacity: 0.8, marginTop: 4 },
-    topicId: { opacity: 0.6, marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace" },
-
-    muted: { opacity: 0.75 },
-    error: {
-        marginBottom: 14,
-        padding: 12,
-        borderRadius: 12,
-        background: "rgba(255, 60, 60, 0.12)",
-        border: "1px solid rgba(255, 60, 60, 0.25)",
-    },
-    footer: { marginTop: 16, textAlign: "center" },
-};

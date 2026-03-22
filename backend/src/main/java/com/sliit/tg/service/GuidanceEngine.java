@@ -12,6 +12,7 @@ public class GuidanceEngine {
     public Result analyze(String topicId, List<QuestionAnswer> answers) {
         int score = 0;
 
+        // This is a simple rule-based scoring pass that turns selected answers into an overall impact level.
         for (QuestionAnswer a : answers) {
             String v = a.getAnswerValue().trim().toLowerCase();
             String type = a.getQuestion().getType().name();
@@ -41,6 +42,7 @@ public class GuidanceEngine {
     private List<String> buildRecommendations(String topicId, String impact) {
         List<String> recs = new ArrayList<>();
 
+        // Recommendations are chosen by topic and then slightly adjusted for higher-impact cases.
         switch (topicId) {
             case "ACADEMIC_STRESS" -> {
                 recs.add("Do a 20-minute starter session on the easiest subtask.");

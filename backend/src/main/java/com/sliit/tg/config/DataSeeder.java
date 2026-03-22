@@ -22,7 +22,7 @@ public class DataSeeder implements CommandLineRunner {
 
         // If topics already exist, assume DB is seeded and skip
         if (topicRepo.count() > 0) {
-            System.out.println("✅ Seed data already exists. Skipping DataSeeder...");
+            System.out.println("Seed data already exists. Skipping DataSeeder...");
             return;
         }
 

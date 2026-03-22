@@ -12,3 +12,8 @@ target/
 
 # OS
 .DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example

@@ -40,6 +40,7 @@ public class GuidedSessionService {
         Topic topic = topicRepo.findById(topicId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found: " + topicId));
 
+        // A guided session is created first, then the frontend receives step 1 to begin the flow.
         GuidedSession session = sessionRepo.save(new GuidedSession(userId, topic));
 
         TopicQuestion q1 = questionRepo.findByTopic_IdAndStepNo(topicId, 1)
@@ -52,6 +53,7 @@ public class GuidedSessionService {
         GuidedSession session = sessionRepo.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
 
+        // If the session is already finished, return the stored result instead of recalculating it.
         if (session.getStatus() == SessionStatus.COMPLETED) {
             SessionOutcome out = outcomeRepo.findById(sessionId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Outcome missing"));
@@ -67,6 +69,7 @@ public class GuidedSessionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Question does not belong to this session topic");
         }
 
+        // Each answer is saved before deciding whether to continue to the next step or finish the session.
         answerRepo.save(new QuestionAnswer(session, q, req.getAnswerValue()));
 
         List<TopicQuestion> all = questionRepo.findByTopic_IdOrderByStepNoAsc(session.getTopic().getId());
@@ -82,6 +85,7 @@ public class GuidedSessionService {
             return new AnswerResponse(sessionId, "ACTIVE", nextStep, toDto(nextQ), null);
         }
 
+        // Once all steps are answered, generate a final impact level, summary, and recommendations.
         session.setStatus(SessionStatus.COMPLETED);
         session.setEndedAt(Instant.now());
         sessionRepo.save(session);
