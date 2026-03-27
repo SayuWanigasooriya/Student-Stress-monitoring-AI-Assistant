@@ -165,19 +165,19 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
         <section className="auth-layout">
             <div className="auth-panel auth-panel-copy">
                 <p className="eyebrow">Welcome</p>
-                <h2 className="hero-title">Sign in to start a guided support session.</h2>
+                <h2 className="hero-title">Sign in when you are ready to begin.</h2>
                 <p className="hero-copy">
-                    This first integration step connects the user-management flow to your topic-guidance experience while keeping the guidance journey unchanged.
+                    Choose a topic, move through a few guided questions, and continue with supportive chat whenever you need it.
                 </p>
 
                 <div className="hero-stats">
                     <div className="hero-stat-card">
-                        <span className="hero-stat-label">What Unlocks</span>
-                        <strong>Guided topics, summaries, and follow-up chat</strong>
+                        <span className="hero-stat-label">Inside The App</span>
+                        <strong>Guided topics, practical summaries, and follow-up chat</strong>
                     </div>
                     <div className="hero-stat-card">
-                        <span className="hero-stat-label">Account Support</span>
-                        <strong>Login now, profile integration next</strong>
+                        <span className="hero-stat-label">Your Space</span>
+                        <strong>Your account keeps your support flow in one place</strong>
                     </div>
                 </div>
             </div>
@@ -189,8 +189,8 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
                         <h2 style={styles.cardTitle}>{mode === "login" ? "Welcome back" : "Create your account"}</h2>
                         <p className="section-helper">
                             {mode === "login"
-                                ? "Use your account details to continue into the topic-guidance flow."
-                                : "Set up your account first, then sign in and continue to guided support."}
+                                ? "Use your account details to continue."
+                                : "Create an account first, then sign in to continue."}
                         </p>
                     </div>
                 </div>
