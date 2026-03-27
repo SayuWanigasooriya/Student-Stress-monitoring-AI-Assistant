@@ -1,6 +1,6 @@
 import { styles } from "../styles";
 
-export default function Header({ userIdDraft, setUserIdDraft, saveUserId, busy }) {
+export default function Header({ currentUser, onOpenProfile, onOpenHome, onLogout, busy, isProfileView }) {
     return (
         <header style={styles.header} className="app-header">
             <div>
@@ -9,15 +9,20 @@ export default function Header({ userIdDraft, setUserIdDraft, saveUserId, busy }
             </div>
 
             <div style={styles.userBox} className="user-box">
-                <input
-                    style={styles.input}
-                    className="field-input"
-                    placeholder="User ID (e.g., user-001)"
-                    value={userIdDraft}
-                    onChange={(e) => setUserIdDraft(e.target.value)}
-                />
-                <button style={styles.btn} className="secondary-button" onClick={saveUserId} disabled={busy}>
-                    Save
+                <div className="header-user-meta">
+                    <strong>{currentUser?.name || "Signed in user"}</strong>
+                    <span>{currentUser?.email || "No email available"}</span>
+                </div>
+                <button
+                    style={styles.btnGhost}
+                    className="ghost-button"
+                    onClick={isProfileView ? onOpenHome : onOpenProfile}
+                    disabled={busy}
+                >
+                    {isProfileView ? "Back Home" : "Profile"}
+                </button>
+                <button style={styles.btn} className="secondary-button" onClick={onLogout} disabled={busy}>
+                    Logout
                 </button>
             </div>
         </header>

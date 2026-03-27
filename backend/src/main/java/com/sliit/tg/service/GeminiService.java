@@ -15,12 +15,24 @@ public class GeminiService {
 
     private final Client client;
     private final String modelName;
+    private final boolean enabled;
 
     public GeminiService(
             @Value("${app.gemini.model:gemini-2.5-flash}") String modelName
     ) {
-        this.client = Client.builder().build();
         this.modelName = modelName;
+        Client builtClient = null;
+        boolean clientEnabled = false;
+
+        try {
+            builtClient = Client.builder().build();
+            clientEnabled = true;
+        } catch (Exception ignored) {
+            // Allow the application to start without Gemini credentials.
+        }
+
+        this.client = builtClient;
+        this.enabled = clientEnabled;
     }
 
     public String getReply(String topicCode,
@@ -147,12 +159,20 @@ Emotion-specific priority:
 
         prompt.append("bot:");
 
-        GenerateContentResponse response =
-                client.models.generateContent(
-                        modelName,
-                        prompt.toString(),
-                        null
-                );
+        if (!enabled || client == null) {
+            return buildFallbackReply(normalizedEmotion, topicCode);
+        }
+
+        GenerateContentResponse response;
+        try {
+            response = client.models.generateContent(
+                    modelName,
+                    prompt.toString(),
+                    null
+            );
+        } catch (Exception ignored) {
+            return buildFallbackReply(normalizedEmotion, topicCode);
+        }
 
         if (response.text() == null || response.text().isBlank()) {
             return "I'm here to help. Could you tell me a bit more?";
@@ -166,6 +186,27 @@ Emotion-specific priority:
                 .trim();
 
         return reply;
+    }
+
+    private String buildFallbackReply(String normalizedEmotion, String topicCode) {
+        if ("fear".equals(normalizedEmotion) || "sadness".equals(normalizedEmotion)) {
+            return "I am here with you. Take one slow breath and focus on the next small step you can manage right now.";
+        }
+
+        if ("anger".equals(normalizedEmotion)) {
+            return "Let's slow this down for a moment. Take a brief pause before reacting, then choose one calm next step.";
+        }
+
+        String topic = topicCode == null ? "" : topicCode.trim().toUpperCase();
+        if ("ACADEMIC_STRESS".equals(topic)) {
+            return "Let's keep this simple. Pick one small academic task you can start in the next ten minutes and focus only on that.";
+        }
+
+        if ("RELATIONSHIPS".equals(topic)) {
+            return "Take a moment to get clear on what you want to say before responding. One calm, honest sentence is enough to start.";
+        }
+
+        return "I'm here to help. Tell me a little more about what's feeling hardest right now.";
     }
 
     private String buildSystemPrompt(String topicCode) {

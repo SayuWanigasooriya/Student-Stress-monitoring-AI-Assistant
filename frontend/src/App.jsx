@@ -1,20 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import AuthScreen from "./components/AuthScreen";
 import Header from "./components/Header";
+import ProfileScreen from "./components/ProfileScreen";
 import QuestionCard from "./components/QuestionCard";
 import ResultCard from "./components/ResultCard";
 import TopicListCard from "./components/TopicListCard";
 import { styles } from "./styles";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const GUIDANCE_API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const USER_API_BASE = import.meta.env.VITE_USER_API_BASE_URL || GUIDANCE_API_BASE;
 
 export default function App() {
     const hasInitializedHistory = useRef(false);
     const isRestoringHistory = useRef(false);
     const lastHistoryKey = useRef("");
 
-    // user id (dynamic)
-    const [userId, setUserId] = useState(() => localStorage.getItem("tg_userId") || "");
-    const [userIdDraft, setUserIdDraft] = useState(userId);
+    const [currentUser, setCurrentUser] = useState(() => {
+        const raw = localStorage.getItem("currentUser");
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    });
+    const [authMode, setAuthMode] = useState("login");
+    const [activeView, setActiveView] = useState("home");
 
     // data
     const [topics, setTopics] = useState([]);
@@ -43,11 +54,17 @@ export default function App() {
 
     // Load topics on start
     useEffect(() => {
+        if (!currentUser) {
+            setTopics([]);
+            setLoadingTopics(false);
+            return;
+        }
+
         (async () => {
             try {
                 setLoadingTopics(true);
                 setError("");
-                const res = await fetch(`${API_BASE}/topics`);
+                const res = await fetch(`${GUIDANCE_API_BASE}/topics`);
                 if (!res.ok) throw new Error(`Failed to load topics (${res.status})`);
                 const data = await res.json();
                 setTopics(data);
@@ -57,7 +74,7 @@ export default function App() {
                 setLoadingTopics(false);
             }
         })();
-    }, []);
+    }, [currentUser]);
 
     // Questions can store their options as JSON, so we parse once whenever the question changes.
     const parsedOptions = useMemo(() => {
@@ -84,6 +101,9 @@ export default function App() {
 
     // Only push a new browser-history entry when the app moves to a meaningful new view/state.
     const historySyncKey = useMemo(() => JSON.stringify({
+        authenticated: Boolean(currentUser),
+        authMode,
+        activeView,
         screen: question ? "question" : finalResult ? "result" : "home",
         sessionId,
         questionId: question?.questionId ?? null,
@@ -91,7 +111,7 @@ export default function App() {
         showChat,
         chatSessionId,
         chatMessagesCount: chatMessages.length,
-    }), [sessionId, question, finalResult, showChat, chatSessionId, chatMessages.length]);
+    }), [currentUser, authMode, activeView, sessionId, question, finalResult, showChat, chatSessionId, chatMessages.length]);
 
     useEffect(() => {
         const handlePopState = (event) => {
@@ -100,8 +120,9 @@ export default function App() {
 
             isRestoringHistory.current = true;
 
-            setUserId(snapshot.userId ?? "");
-            setUserIdDraft(snapshot.userIdDraft ?? snapshot.userId ?? "");
+            setCurrentUser(snapshot.currentUser ?? null);
+            setAuthMode(snapshot.authMode ?? "login");
+            setActiveView(snapshot.activeView ?? "home");
             setSessionId(snapshot.sessionId ?? null);
             setQuestion(snapshot.question ?? null);
             setSelectedAnswer(snapshot.selectedAnswer ?? "");
@@ -122,8 +143,9 @@ export default function App() {
 
     useEffect(() => {
         const snapshot = {
-            userId,
-            userIdDraft,
+            currentUser,
+            authMode,
+            activeView,
             sessionId,
             question,
             selectedAnswer,
@@ -154,8 +176,9 @@ export default function App() {
             lastHistoryKey.current = historySyncKey;
         }
     }, [
-        userId,
-        userIdDraft,
+        currentUser,
+        authMode,
+        activeView,
         sessionId,
         question,
         selectedAnswer,
@@ -169,21 +192,16 @@ export default function App() {
         historySyncKey,
     ]);
 
-    const saveUserId = () => {
-        const v = userIdDraft.trim();
-        if (!v) {
-            setError("Please enter a User ID (anything like user-001).");
-            return;
-        }
-        setError("");
-        setUserId(v);
-        localStorage.setItem("tg_userId", v);
-    };
+    const userId = useMemo(() => {
+        if (!currentUser) return "";
+        return String(currentUser.email || currentUser.id || "").trim();
+    }, [currentUser]);
 
     const startSession = async (topicId) => {
         try {
             setBusy(true);
             setError("");
+            setActiveView("home");
 
             // Starting a new guided session should clear any previous result/chat state.
             setFinalResult(null);
@@ -195,11 +213,11 @@ export default function App() {
 
             const uid = userId.trim();
             if (!uid) {
-                setError("Set a User ID first.");
+                setError("Sign in before starting a topic.");
                 return;
             }
 
-            const res = await fetch(`${API_BASE}/topics/${topicId}/start`, {
+            const res = await fetch(`${GUIDANCE_API_BASE}/topics/${topicId}/start`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userId: uid }),
@@ -243,7 +261,7 @@ export default function App() {
             setBusy(true);
             setError("");
 
-            const res = await fetch(`${API_BASE}/sessions/${sessionId}/answer`, {
+            const res = await fetch(`${GUIDANCE_API_BASE}/sessions/${sessionId}/answer`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -288,7 +306,7 @@ export default function App() {
                 finalResult?.topicId ||
                 "ACADEMIC_STRESS";
 
-            const res = await fetch(`${API_BASE}/api/chat/session`, {
+            const res = await fetch(`${GUIDANCE_API_BASE}/api/chat/session`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ topicCode }),
@@ -323,7 +341,7 @@ export default function App() {
         setChatSending(true);
 
         try {
-            const res = await fetch(`${API_BASE}/api/chat/message`, {
+            const res = await fetch(`${GUIDANCE_API_BASE}/api/chat/message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -349,6 +367,7 @@ export default function App() {
     };
 
     const resetAll = () => {
+        setActiveView("home");
         setSessionId(null);
         setQuestion(null);
         setFinalResult(null);
@@ -363,7 +382,24 @@ export default function App() {
         setError("");
     };
 
-    const isHomeScreen = !question && !finalResult;
+    const handleAuthSuccess = (user) => {
+        setCurrentUser(user);
+        setAuthMode("login");
+        setActiveView("home");
+        setError("");
+        resetAll();
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("currentUser");
+        setCurrentUser(null);
+        setAuthMode("login");
+        setActiveView("home");
+        resetAll();
+    };
+
+    const isProfileView = Boolean(currentUser) && activeView === "profile";
+    const isHomeScreen = !question && !finalResult && !isProfileView;
 
     return (
         <div style={styles.page} className="app-shell">
@@ -371,82 +407,104 @@ export default function App() {
             <div className="app-orb app-orb-right" />
 
             <div style={styles.container} className="app-container">
-                <Header
-                    userIdDraft={userIdDraft}
-                    setUserIdDraft={setUserIdDraft}
-                    saveUserId={saveUserId}
-                    busy={busy}
-                />
-
-                {error && <div style={styles.error}>{error}</div>}
-
-                {isHomeScreen && (
-                    <section className="hero-panel">
-                        <div>
-                            <p className="eyebrow">Support Space</p>
-                            <h2 className="hero-title">Start with a topic, reflect step by step, and continue with helpful guidance.</h2>
-                            <p className="hero-copy">
-                                Choose the area you want support with and move through the conversation at your own pace.
-                            </p>
-                        </div>
-
-                        <div className="hero-stats">
-                            <div className="hero-stat-card">
-                                <span className="hero-stat-label">Topics</span>
-                                <strong>{topics.length}</strong>
-                            </div>
-                            <div className="hero-stat-card">
-                                <span className="hero-stat-label">Current User</span>
-                                <strong>{userId || "Set your ID to begin"}</strong>
-                            </div>
-                            <div className="hero-stat-card">
-                                <span className="hero-stat-label">What You Get</span>
-                                <strong>Guided steps and follow-up chat</strong>
-                            </div>
-                        </div>
-                    </section>
-                )}
-
-                {question && (
-                    <QuestionCard
-                        question={question}
-                        totalStepsForCurrentTopic={totalStepsForCurrentTopic}
-                        progressPct={progressPct}
-                        parsedOptions={parsedOptions}
-                        selectedAnswer={selectedAnswer}
-                        setSelectedAnswer={setSelectedAnswer}
-                        textAnswer={textAnswer}
-                        setTextAnswer={setTextAnswer}
-                        scaleAnswer={scaleAnswer}
-                        setScaleAnswer={setScaleAnswer}
-                        submitAnswer={submitAnswer}
-                        resetAll={resetAll}
-                        busy={busy}
+                {!currentUser ? (
+                    <AuthScreen
+                        mode={authMode}
+                        setMode={setAuthMode}
+                        userApiBase={USER_API_BASE}
+                        onAuthSuccess={handleAuthSuccess}
                     />
-                )}
+                ) : (
+                    <>
+                        <Header
+                            currentUser={currentUser}
+                            onOpenProfile={() => setActiveView("profile")}
+                            onOpenHome={() => setActiveView("home")}
+                            onLogout={handleLogout}
+                            busy={busy}
+                            isProfileView={isProfileView}
+                        />
 
-                {finalResult && (
-                    <ResultCard
-                        finalResult={finalResult}
-                        showChat={showChat}
-                        openChat={openChat}
-                        resetAll={resetAll}
-                        chatMessages={chatMessages}
-                        chatInput={chatInput}
-                        setChatInput={setChatInput}
-                        sendChatMessage={sendChatMessage}
-                        chatSending={chatSending}
-                    />
-                )}
+                        {error && <div style={styles.error}>{error}</div>}
 
-                {isHomeScreen && (
-                    <TopicListCard
-                        loadingTopics={loadingTopics}
-                        topics={topics}
-                        startSession={startSession}
-                        busy={busy}
-                        userId={userId}
-                    />
+                        {isProfileView ? (
+                            <ProfileScreen
+                                currentUser={currentUser}
+                                userApiBase={USER_API_BASE}
+                                onUserUpdated={setCurrentUser}
+                                onLogout={handleLogout}
+                            />
+                        ) : null}
+
+                        {isHomeScreen && (
+                            <section className="hero-panel">
+                                <div>
+                                    <p className="eyebrow">Support Space</p>
+                                    <h2 className="hero-title">Start with a topic, reflect step by step, and continue with helpful guidance.</h2>
+                                    <p className="hero-copy">
+                                        Choose the area you want support with and move through the conversation at your own pace.
+                                    </p>
+                                </div>
+
+                                <div className="hero-stats">
+                                    <div className="hero-stat-card">
+                                        <span className="hero-stat-label">Topics</span>
+                                        <strong>{topics.length}</strong>
+                                    </div>
+                                    <div className="hero-stat-card">
+                                        <span className="hero-stat-label">Signed In As</span>
+                                        <strong>{currentUser.name || userId || "Account connected"}</strong>
+                                    </div>
+                                    <div className="hero-stat-card">
+                                        <span className="hero-stat-label">What You Get</span>
+                                        <strong>Guided steps and follow-up chat</strong>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {question && !isProfileView && (
+                            <QuestionCard
+                                question={question}
+                                totalStepsForCurrentTopic={totalStepsForCurrentTopic}
+                                progressPct={progressPct}
+                                parsedOptions={parsedOptions}
+                                selectedAnswer={selectedAnswer}
+                                setSelectedAnswer={setSelectedAnswer}
+                                textAnswer={textAnswer}
+                                setTextAnswer={setTextAnswer}
+                                scaleAnswer={scaleAnswer}
+                                setScaleAnswer={setScaleAnswer}
+                                submitAnswer={submitAnswer}
+                                resetAll={resetAll}
+                                busy={busy}
+                            />
+                        )}
+
+                        {finalResult && !isProfileView && (
+                            <ResultCard
+                                finalResult={finalResult}
+                                showChat={showChat}
+                                openChat={openChat}
+                                resetAll={resetAll}
+                                chatMessages={chatMessages}
+                                chatInput={chatInput}
+                                setChatInput={setChatInput}
+                                sendChatMessage={sendChatMessage}
+                                chatSending={chatSending}
+                            />
+                        )}
+
+                        {isHomeScreen && (
+                            <TopicListCard
+                                loadingTopics={loadingTopics}
+                                topics={topics}
+                                startSession={startSession}
+                                busy={busy}
+                                userId={userId}
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </div>
