@@ -20,7 +20,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        // ✅ If topics already exist, assume DB is seeded and skip
+        // If topics already exist, assume DB is seeded and skip
         if (topicRepo.count() > 0) {
             System.out.println("✅ Seed data already exists. Skipping DataSeeder...");
             return;
@@ -76,6 +76,6 @@ public class DataSeeder implements CommandLineRunner {
         qRepo.save(new TopicQuestion(relationships, 5, QuestionType.MCQ, "Choose a next safe step:",
                 "[\"Calm message template\",\"Pause & reflect\",\"Talk face-to-face\",\"Set boundary statement\",\"Seek advice from trusted person\"]"));
 
-        System.out.println("✅ Seed completed.");
+        System.out.println("Seed completed.");
     }
 }
