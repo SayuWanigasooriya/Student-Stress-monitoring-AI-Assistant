@@ -7,8 +7,7 @@ import ResultCard from "./components/ResultCard";
 import TopicListCard from "./components/TopicListCard";
 import { styles } from "./styles";
 
-const GUIDANCE_API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-const USER_API_BASE = import.meta.env.VITE_USER_API_BASE_URL || GUIDANCE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function App() {
     const hasInitializedHistory = useRef(false);
@@ -64,7 +63,7 @@ export default function App() {
             try {
                 setLoadingTopics(true);
                 setError("");
-                const res = await fetch(`${GUIDANCE_API_BASE}/topics`);
+                const res = await fetch(`${API_BASE}/topics`);
                 if (!res.ok) throw new Error(`Failed to load topics (${res.status})`);
                 const data = await res.json();
                 setTopics(data);
@@ -217,7 +216,7 @@ export default function App() {
                 return;
             }
 
-            const res = await fetch(`${GUIDANCE_API_BASE}/topics/${topicId}/start`, {
+            const res = await fetch(`${API_BASE}/topics/${topicId}/start`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userId: uid }),
@@ -261,7 +260,7 @@ export default function App() {
             setBusy(true);
             setError("");
 
-            const res = await fetch(`${GUIDANCE_API_BASE}/sessions/${sessionId}/answer`, {
+            const res = await fetch(`${API_BASE}/sessions/${sessionId}/answer`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -306,7 +305,7 @@ export default function App() {
                 finalResult?.topicId ||
                 "ACADEMIC_STRESS";
 
-            const res = await fetch(`${GUIDANCE_API_BASE}/api/chat/session`, {
+            const res = await fetch(`${API_BASE}/api/chat/session`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ topicCode }),
@@ -341,7 +340,7 @@ export default function App() {
         setChatSending(true);
 
         try {
-            const res = await fetch(`${GUIDANCE_API_BASE}/api/chat/message`, {
+            const res = await fetch(`${API_BASE}/api/chat/message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -411,7 +410,7 @@ export default function App() {
                     <AuthScreen
                         mode={authMode}
                         setMode={setAuthMode}
-                        userApiBase={USER_API_BASE}
+                        userApiBase={API_BASE}
                         onAuthSuccess={handleAuthSuccess}
                     />
                 ) : (
@@ -430,7 +429,7 @@ export default function App() {
                         {isProfileView ? (
                             <ProfileScreen
                                 currentUser={currentUser}
-                                userApiBase={USER_API_BASE}
+                                userApiBase={API_BASE}
                                 onUserUpdated={setCurrentUser}
                                 onLogout={handleLogout}
                             />
