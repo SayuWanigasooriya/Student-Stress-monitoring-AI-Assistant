@@ -1,57 +1,40 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthScreen from "./components/AuthScreen";
 import Header from "./components/Header";
 import ProfileScreen from "./components/ProfileScreen";
 import QuestionCard from "./components/QuestionCard";
 import ResultCard from "./components/ResultCard";
 import TopicListCard from "./components/TopicListCard";
+import useBrowserHistory from "./hooks/useBrowserHistory";
+import usePersistedUser from "./hooks/usePersistedUser";
 import { styles } from "./styles";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import { API_BASE, createSupportIntroMessage, getAnswerValue, getFriendlyMessage } from "./utils/appHelpers";
 
 export default function App() {
-    const hasInitializedHistory = useRef(false);
-    const isRestoringHistory = useRef(false);
-    const lastHistoryKey = useRef("");
-
-    const [currentUser, setCurrentUser] = useState(() => {
-        const raw = localStorage.getItem("currentUser");
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw);
-        } catch {
-            return null;
-        }
-    });
+    const { currentUser, setCurrentUser, clearCurrentUser } = usePersistedUser();
     const [authMode, setAuthMode] = useState("login");
     const [activeView, setActiveView] = useState("home");
 
-    // data
     const [topics, setTopics] = useState([]);
     const [loadingTopics, setLoadingTopics] = useState(true);
 
-    // session state
     const [sessionId, setSessionId] = useState(null);
     const [question, setQuestion] = useState(null);
-    const [selectedAnswer, setSelectedAnswer] = useState(""); // for MCQ/YES_NO
-    const [textAnswer, setTextAnswer] = useState(""); // for TEXT
-    const [scaleAnswer, setScaleAnswer] = useState(3); // for SCALE
+    const [selectedAnswer, setSelectedAnswer] = useState("");
+    const [textAnswer, setTextAnswer] = useState("");
+    const [scaleAnswer, setScaleAnswer] = useState(3);
 
-    // final result
     const [finalResult, setFinalResult] = useState(null);
     const [showChat, setShowChat] = useState(false);
 
-    // chat state
     const [chatInput, setChatInput] = useState("");
     const [chatMessages, setChatMessages] = useState([]);
     const [chatSessionId, setChatSessionId] = useState(null);
     const [chatSending, setChatSending] = useState(false);
 
-    // ui state
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
 
-    // Load topics on start
     useEffect(() => {
         if (!currentUser) {
             setTopics([]);
@@ -64,18 +47,17 @@ export default function App() {
                 setLoadingTopics(true);
                 setError("");
                 const res = await fetch(`${API_BASE}/topics`);
-                if (!res.ok) throw new Error(`Failed to load topics (${res.status})`);
+                if (!res.ok) throw new Error("We couldn't load the support topics right now.");
                 const data = await res.json();
                 setTopics(data);
             } catch (e) {
-                setError(e.message || "Failed to load topics");
+                setError(getFriendlyMessage(e, "We couldn't load the support topics right now."));
             } finally {
                 setLoadingTopics(false);
             }
         })();
     }, [currentUser]);
 
-    // Questions can store their options as JSON, so we parse once whenever the question changes.
     const parsedOptions = useMemo(() => {
         if (!question?.optionsJson) return null;
         try {
@@ -87,94 +69,35 @@ export default function App() {
 
     const totalStepsForCurrentTopic = useMemo(() => {
         if (!question) return null;
-        const t = topics.find((x) => x.id === question.topicId);
-        if (t && typeof t.totalSteps === "number") return t.totalSteps;
+        const topic = topics.find((item) => item.id === question.topicId);
+        if (topic && typeof topic.totalSteps === "number") return topic.totalSteps;
         return null;
     }, [question, topics]);
 
     const progressPct = useMemo(() => {
-        if (!question) return 0;
-        if (!totalStepsForCurrentTopic) return 0;
+        if (!question || !totalStepsForCurrentTopic) return 0;
         return Math.min(100, Math.round((question.stepNo / totalStepsForCurrentTopic) * 100));
     }, [question, totalStepsForCurrentTopic]);
 
-    // Only push a new browser-history entry when the app moves to a meaningful new view/state.
-    const historySyncKey = useMemo(() => JSON.stringify({
-        authenticated: Boolean(currentUser),
-        authMode,
-        activeView,
-        screen: question ? "question" : finalResult ? "result" : "home",
-        sessionId,
-        questionId: question?.questionId ?? null,
-        finalSummary: finalResult?.summary ?? null,
-        showChat,
-        chatSessionId,
-        chatMessagesCount: chatMessages.length,
-    }), [currentUser, authMode, activeView, sessionId, question, finalResult, showChat, chatSessionId, chatMessages.length]);
+    const applySnapshot = useCallback((snapshot) => {
+        setCurrentUser(snapshot.currentUser ?? null);
+        setAuthMode(snapshot.authMode ?? "login");
+        setActiveView(snapshot.activeView ?? "home");
+        setSessionId(snapshot.sessionId ?? null);
+        setQuestion(snapshot.question ?? null);
+        setSelectedAnswer(snapshot.selectedAnswer ?? "");
+        setTextAnswer(snapshot.textAnswer ?? "");
+        setScaleAnswer(snapshot.scaleAnswer ?? 3);
+        setFinalResult(snapshot.finalResult ?? null);
+        setShowChat(snapshot.showChat ?? false);
+        setChatInput(snapshot.chatInput ?? "");
+        setChatMessages(snapshot.chatMessages ?? []);
+        setChatSessionId(snapshot.chatSessionId ?? null);
+        setChatSending(false);
+        setError("");
+    }, [setCurrentUser]);
 
-    useEffect(() => {
-        const handlePopState = (event) => {
-            const snapshot = event.state?.appSnapshot;
-            if (!snapshot) return;
-
-            isRestoringHistory.current = true;
-
-            setCurrentUser(snapshot.currentUser ?? null);
-            setAuthMode(snapshot.authMode ?? "login");
-            setActiveView(snapshot.activeView ?? "home");
-            setSessionId(snapshot.sessionId ?? null);
-            setQuestion(snapshot.question ?? null);
-            setSelectedAnswer(snapshot.selectedAnswer ?? "");
-            setTextAnswer(snapshot.textAnswer ?? "");
-            setScaleAnswer(snapshot.scaleAnswer ?? 3);
-            setFinalResult(snapshot.finalResult ?? null);
-            setShowChat(snapshot.showChat ?? false);
-            setChatInput(snapshot.chatInput ?? "");
-            setChatMessages(snapshot.chatMessages ?? []);
-            setChatSessionId(snapshot.chatSessionId ?? null);
-            setChatSending(false);
-            setError("");
-        };
-
-        window.addEventListener("popstate", handlePopState);
-        return () => window.removeEventListener("popstate", handlePopState);
-    }, []);
-
-    useEffect(() => {
-        const snapshot = {
-            currentUser,
-            authMode,
-            activeView,
-            sessionId,
-            question,
-            selectedAnswer,
-            textAnswer,
-            scaleAnswer,
-            finalResult,
-            showChat,
-            chatInput,
-            chatMessages,
-            chatSessionId,
-        };
-
-        if (!hasInitializedHistory.current) {
-            window.history.replaceState({ appSnapshot: snapshot }, "");
-            hasInitializedHistory.current = true;
-            lastHistoryKey.current = historySyncKey;
-            return;
-        }
-
-        if (isRestoringHistory.current) {
-            lastHistoryKey.current = historySyncKey;
-            isRestoringHistory.current = false;
-            return;
-        }
-
-        if (historySyncKey !== lastHistoryKey.current) {
-            window.history.pushState({ appSnapshot: snapshot }, "");
-            lastHistoryKey.current = historySyncKey;
-        }
-    }, [
+    const historyState = useMemo(() => ({
         currentUser,
         authMode,
         activeView,
@@ -188,21 +111,50 @@ export default function App() {
         chatInput,
         chatMessages,
         chatSessionId,
-        historySyncKey,
+    }), [
+        currentUser,
+        authMode,
+        activeView,
+        sessionId,
+        question,
+        selectedAnswer,
+        textAnswer,
+        scaleAnswer,
+        finalResult,
+        showChat,
+        chatInput,
+        chatMessages,
+        chatSessionId,
     ]);
+
+    useBrowserHistory(historyState, applySnapshot);
 
     const userId = useMemo(() => {
         if (!currentUser) return "";
         return String(currentUser.email || currentUser.id || "").trim();
     }, [currentUser]);
 
+    const resetAll = useCallback(() => {
+        setActiveView("home");
+        setSessionId(null);
+        setQuestion(null);
+        setFinalResult(null);
+        setSelectedAnswer("");
+        setTextAnswer("");
+        setScaleAnswer(3);
+        setShowChat(false);
+        setChatInput("");
+        setChatMessages([]);
+        setChatSessionId(null);
+        setChatSending(false);
+        setError("");
+    }, []);
+
     const startSession = async (topicId) => {
         try {
             setBusy(true);
             setError("");
             setActiveView("home");
-
-            // Starting a new guided session should clear any previous result/chat state.
             setFinalResult(null);
             setShowChat(false);
             setChatInput("");
@@ -221,18 +173,16 @@ export default function App() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userId: uid }),
             });
-            if (!res.ok) throw new Error(`Start failed (${res.status})`);
+            if (!res.ok) throw new Error("We couldn't start this topic right now.");
 
             const data = await res.json();
             setSessionId(data.sessionId);
             setQuestion(data.firstQuestion);
-
-            // reset inputs
             setSelectedAnswer("");
             setTextAnswer("");
             setScaleAnswer(3);
         } catch (e) {
-            setError(e.message || "Failed to start session");
+            setError(getFriendlyMessage(e, "We couldn't start this topic right now."));
         } finally {
             setBusy(false);
         }
@@ -241,18 +191,10 @@ export default function App() {
     const submitAnswer = async () => {
         if (!sessionId || !question) return;
 
-        // Convert the current UI control value into the single answer format expected by the backend.
-        let answerValue = "";
-        if (question.type === "MCQ" || question.type === "YES_NO") {
-            answerValue = selectedAnswer;
-        } else if (question.type === "TEXT") {
-            answerValue = textAnswer.trim();
-        } else if (question.type === "SCALE") {
-            answerValue = String(scaleAnswer);
-        }
+        const answerValue = getAnswerValue(question, { selectedAnswer, textAnswer, scaleAnswer });
 
         if (!answerValue) {
-            setError("Please select/enter an answer first.");
+            setError("Please choose or type an answer before continuing.");
             return;
         }
 
@@ -268,15 +210,13 @@ export default function App() {
                     answerValue,
                 }),
             });
-            if (!res.ok) throw new Error(`Answer failed (${res.status})`);
+            if (!res.ok) throw new Error("We couldn't save your answer right now.");
 
             const data = await res.json();
-
             setSelectedAnswer("");
             setTextAnswer("");
             setScaleAnswer(3);
 
-            // A session either moves to the next question or ends with a final summary/result.
             if (data.finalResult) {
                 setFinalResult(data.finalResult);
                 setQuestion(null);
@@ -289,7 +229,7 @@ export default function App() {
                 setSessionId(null);
             }
         } catch (e) {
-            setError(e.message || "Failed to submit answer");
+            setError(getFriendlyMessage(e, "We couldn't save your answer right now."));
         } finally {
             setBusy(false);
         }
@@ -299,11 +239,7 @@ export default function App() {
         try {
             setError("");
 
-            // Reuse the topic from the final result so the follow-up chat stays in the same support area.
-            const topicCode =
-                finalResult?.topicCode ||
-                finalResult?.topicId ||
-                "ACADEMIC_STRESS";
+            const topicCode = finalResult?.topicCode || finalResult?.topicId || "ACADEMIC_STRESS";
 
             const res = await fetch(`${API_BASE}/api/chat/session`, {
                 method: "POST",
@@ -311,18 +247,15 @@ export default function App() {
                 body: JSON.stringify({ topicCode }),
             });
 
-            if (!res.ok) throw new Error(`Failed to create chat session (${res.status})`);
+            if (!res.ok) throw new Error("We couldn't open the support chat right now.");
 
             const data = await res.json();
-
             setChatSessionId(data.sessionId);
             setShowChat(true);
             setChatInput("");
-            setChatMessages([
-                { sender: "bot", message: "Hello. I can continue helping you with this topic." }
-            ]);
+            setChatMessages([createSupportIntroMessage()]);
         } catch (e) {
-            setError(e.message || "Failed to open chat");
+            setError(getFriendlyMessage(e, "We couldn't open the support chat right now."));
         }
     };
 
@@ -330,12 +263,7 @@ export default function App() {
         if (!chatInput.trim() || !chatSessionId || chatSending) return;
 
         const userMessage = chatInput.trim();
-
-        // Show the user's message immediately, then append the bot reply when the API call completes.
-        setChatMessages((prev) => [
-            ...prev,
-            { sender: "user", message: userMessage }
-        ]);
+        setChatMessages((prev) => [...prev, { sender: "user", message: userMessage }]);
         setChatInput("");
         setChatSending(true);
 
@@ -350,35 +278,15 @@ export default function App() {
                 }),
             });
 
-            if (!res.ok) throw new Error(`Failed to send message (${res.status})`);
+            if (!res.ok) throw new Error("We couldn't send your message right now.");
 
             const data = await res.json();
-
-            setChatMessages((prev) => [
-                ...prev,
-                { sender: "bot", message: data.reply }
-            ]);
+            setChatMessages((prev) => [...prev, { sender: "bot", message: data.reply }]);
         } catch (e) {
-            setError(e.message || "Failed to send chat message");
+            setError(getFriendlyMessage(e, "We couldn't send your message right now."));
         } finally {
             setChatSending(false);
         }
-    };
-
-    const resetAll = () => {
-        setActiveView("home");
-        setSessionId(null);
-        setQuestion(null);
-        setFinalResult(null);
-        setSelectedAnswer("");
-        setTextAnswer("");
-        setScaleAnswer(3);
-        setShowChat(false);
-        setChatInput("");
-        setChatMessages([]);
-        setChatSessionId(null);
-        setChatSending(false);
-        setError("");
     };
 
     const handleAuthSuccess = (user) => {
@@ -390,8 +298,7 @@ export default function App() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("currentUser");
-        setCurrentUser(null);
+        clearCurrentUser();
         setAuthMode("login");
         setActiveView("home");
         resetAll();
@@ -439,7 +346,7 @@ export default function App() {
                             <section className="hero-panel">
                                 <div>
                                     <p className="eyebrow">Support Space</p>
-                                    <h2 className="hero-title">Start with a topic, reflect step by step, and continue with helpful guidance.</h2>
+                                    <h2 className="hero-title">Start with one area, move step by step, and take support at your own pace.</h2>
                                     <p className="hero-copy">
                                         Choose the area you want support with and move through the conversation at your own pace.
                                     </p>
