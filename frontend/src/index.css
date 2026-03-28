@@ -2,8 +2,8 @@
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.92);
-  background-color: #0b0c10;
+  color: #203743;
+  background-color: #f4faf8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,7 +21,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #0b0c10;
+  background: linear-gradient(180deg, #f6fbfc 0%, #edf6f4 100%);
 }
 
 button,
@@ -38,7 +38,7 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgba(66, 193, 255, 0.9);
+  outline: 2px solid rgba(102, 155, 185, 0.78);
   outline-offset: 2px;
 }
 
@@ -59,13 +59,13 @@ textarea:focus-visible {
 .app-orb-left {
   top: -8rem;
   left: -8rem;
-  background: rgba(132, 94, 247, 0.18);
+  background: rgba(124, 174, 199, 0.16);
 }
 
 .app-orb-right {
   top: 10rem;
   right: -10rem;
-  background: rgba(66, 193, 255, 0.16);
+  background: rgba(124, 201, 178, 0.14);
 }
 
 .app-header {
@@ -82,17 +82,17 @@ textarea:focus-visible {
   gap: 1.25rem;
   margin-bottom: 1.5rem;
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(133, 164, 181, 0.18);
   border-radius: 26px;
   background:
-    linear-gradient(135deg, rgba(132, 94, 247, 0.12), transparent 45%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+    linear-gradient(135deg, rgba(124, 174, 199, 0.12), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 251, 249, 0.88));
+  box-shadow: 0 24px 48px rgba(73, 109, 119, 0.12);
 }
 
 .eyebrow {
   margin: 0 0 0.65rem;
-  color: rgba(66, 193, 255, 0.95);
+  color: #5e8ba3;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.78rem;
@@ -110,7 +110,7 @@ textarea:focus-visible {
 .hero-copy {
   max-width: 58ch;
   margin: 1rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: #607984;
   font-size: 1rem;
 }
 
@@ -122,8 +122,8 @@ textarea:focus-visible {
 .hero-stat-card {
   padding: 1rem 1.05rem;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .hero-stat-card strong {
@@ -134,7 +134,7 @@ textarea:focus-visible {
 }
 
 .hero-stat-label {
-  color: rgba(255, 255, 255, 0.64);
+  color: #708791;
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -151,7 +151,7 @@ textarea:focus-visible {
 .section-helper {
   margin: 0.75rem 0 0;
   max-width: 56ch;
-  color: rgba(255, 255, 255, 0.68);
+  color: #607984;
 }
 
 .primary-button:hover:not(:disabled),
@@ -167,12 +167,12 @@ textarea:focus-visible {
 }
 
 .field-input:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(133, 164, 181, 0.3);
 }
 
 .field-input:focus {
-  border-color: rgba(66, 193, 255, 0.7);
-  box-shadow: 0 0 0 4px rgba(66, 193, 255, 0.14);
+  border-color: rgba(102, 155, 185, 0.58);
+  box-shadow: 0 0 0 4px rgba(124, 174, 199, 0.16);
 }
 
 .topic-grid {
@@ -184,16 +184,16 @@ textarea:focus-visible {
 }
 
 .topic-card:hover {
-  border-color: rgba(66, 193, 255, 0.28);
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22);
+  border-color: rgba(102, 155, 185, 0.24);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 28px rgba(73, 109, 119, 0.1);
 }
 
 .empty-state-card {
   padding: 1.1rem 1.15rem;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .empty-state-card strong {
@@ -203,7 +203,7 @@ textarea:focus-visible {
 
 .empty-state-card p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: #607984;
   line-height: 1.55;
 }
 
@@ -225,28 +225,28 @@ textarea:focus-visible {
 }
 
 .impact-low {
-  background: rgba(66, 193, 255, 0.16);
-  color: #9ae6ff;
-  border: 1px solid rgba(66, 193, 255, 0.28);
+  background: rgba(124, 174, 199, 0.16);
+  color: #4f7183;
+  border: 1px solid rgba(124, 174, 199, 0.28);
 }
 
 .impact-medium {
-  background: rgba(132, 94, 247, 0.2);
-  color: #d2c1ff;
-  border: 1px solid rgba(132, 94, 247, 0.34);
+  background: rgba(142, 191, 176, 0.18);
+  color: #486f66;
+  border: 1px solid rgba(124, 201, 178, 0.28);
 }
 
 .impact-high {
-  background: rgba(255, 168, 107, 0.14);
-  color: #ffd0a4;
-  border: 1px solid rgba(255, 168, 107, 0.3);
+  background: rgba(224, 187, 143, 0.22);
+  color: #7e6445;
+  border: 1px solid rgba(214, 170, 121, 0.28);
 }
 
 .recommendation-panel {
   padding: 1rem 1rem 0.35rem;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .recommendation-list {
@@ -255,7 +255,7 @@ textarea:focus-visible {
 }
 
 .chat-shell {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(133, 164, 181, 0.16);
 }
 
 .chat-messages {
@@ -268,7 +268,7 @@ textarea:focus-visible {
 }
 
 .chat-typing {
-  color: rgba(255, 255, 255, 0.72);
+  color: #607984;
 }
 
 .auth-layout {
@@ -327,29 +327,29 @@ textarea:focus-visible {
   padding: 0;
   background: transparent;
   border: 0;
-  color: rgba(255, 255, 255, 0.58);
+  color: #6e8792;
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .auth-toggle:hover {
   filter: none;
-  color: rgba(255, 255, 255, 0.9);
+  color: #34505d;
 }
 
 .auth-field-error .auth-field-input {
-  border-color: rgba(255, 102, 102, 0.55) !important;
-  background: rgba(255, 102, 102, 0.06) !important;
+  border-color: rgba(214, 149, 117, 0.45) !important;
+  background: rgba(231, 171, 144, 0.12) !important;
 }
 
 .auth-field-ok .auth-field-input {
-  border-color: rgba(140, 227, 164, 0.45) !important;
+  border-color: rgba(124, 201, 178, 0.42) !important;
 }
 
 .auth-field-message {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
-  color: #ffd0a4;
+  color: #8a6750;
 }
 
 .auth-strength {
@@ -385,7 +385,7 @@ textarea:focus-visible {
 
 .auth-switch-copy {
   margin: 1.2rem 0 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: #607984;
   text-align: center;
 }
 
@@ -395,13 +395,13 @@ textarea:focus-visible {
   padding: 0;
   background: transparent;
   border: 0;
-  color: #9ae6ff;
+  color: #5e8ba3;
   font-weight: 700;
 }
 
 .auth-switch-button:hover {
   filter: none;
-  color: #d2f4ff;
+  color: #3a6070;
 }
 
 .header-user-meta {
@@ -409,11 +409,11 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.15rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: #607984;
 }
 
 .header-user-meta strong {
-  color: rgba(255, 255, 255, 0.94);
+  color: #1f3340;
   font-size: 0.95rem;
 }
 
@@ -438,9 +438,9 @@ textarea:focus-visible {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(140, 227, 164, 0.25);
-  background: rgba(140, 227, 164, 0.08);
-  color: #baf2c9;
+  border: 1px solid rgba(124, 201, 178, 0.24);
+  background: rgba(124, 201, 178, 0.12);
+  color: #486f66;
 }
 
 .profile-hero {
@@ -450,8 +450,8 @@ textarea:focus-visible {
   padding: 1.1rem;
   margin-bottom: 1.25rem;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .profile-avatar-wrap {
@@ -462,8 +462,8 @@ textarea:focus-visible {
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
-  border: 2px solid rgba(132, 94, 247, 0.45);
-  box-shadow: 0 0 0 4px rgba(132, 94, 247, 0.08);
+  border: 2px solid rgba(124, 174, 199, 0.38);
+  box-shadow: 0 0 0 4px rgba(124, 174, 199, 0.08);
 }
 
 .profile-avatar-image {
@@ -480,8 +480,8 @@ textarea:focus-visible {
   place-items: center;
   font-size: 1.7rem;
   font-weight: 900;
-  color: #fff;
-  background: linear-gradient(135deg, rgba(132, 94, 247, 0.42), rgba(66, 193, 255, 0.36));
+  color: #f8fcfb;
+  background: linear-gradient(135deg, rgba(124, 174, 199, 0.72), rgba(124, 201, 178, 0.68));
 }
 
 .profile-avatar-overlay {
@@ -512,7 +512,7 @@ textarea:focus-visible {
 
 .profile-email {
   margin-top: 0.2rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: #6b818d;
 }
 
 .profile-avatar-actions {
@@ -528,22 +528,22 @@ textarea:focus-visible {
   padding: 0;
   background: transparent;
   border: 0;
-  color: #9ae6ff;
+  color: #5e8ba3;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
 .profile-link-button:hover {
   filter: none;
-  color: #d2f4ff;
+  color: #3a6070;
 }
 
 .profile-link-danger {
-  color: #ffd0a4;
+  color: #8a6750;
 }
 
 .profile-link-danger:hover {
-  color: #ffd4d4;
+  color: #6f4f3c;
 }
 
 .profile-fields-grid {
@@ -555,13 +555,13 @@ textarea:focus-visible {
 .profile-field-card {
   padding: 0.95rem 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(133, 164, 181, 0.16);
+  background: rgba(255, 255, 255, 0.68);
 }
 
 .profile-field-label {
   margin-bottom: 0.25rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #708791;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -570,6 +570,7 @@ textarea:focus-visible {
 .profile-field-value {
   font-size: 0.98rem;
   font-weight: 600;
+  color: #28404b;
 }
 
 .profile-actions {
@@ -597,9 +598,9 @@ textarea:focus-visible {
   width: min(92vw, 380px);
   padding: 1.6rem;
   border-radius: 22px;
-  border: 1px solid rgba(255, 102, 102, 0.25);
-  background: #17181f;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(214, 170, 121, 0.22);
+  background: #fffdf9;
+  box-shadow: 0 20px 60px rgba(73, 109, 119, 0.16);
   text-align: center;
 }
 
@@ -610,7 +611,7 @@ textarea:focus-visible {
 }
 
 .profile-modal p {
-  color: rgba(255, 255, 255, 0.65);
+  color: #607984;
 }
 
 .profile-modal-actions {
@@ -624,8 +625,8 @@ textarea:focus-visible {
 }
 
 .danger-button {
-  color: #ffb2b2 !important;
-  border-color: rgba(255, 102, 102, 0.3) !important;
+  color: #8a6750 !important;
+  border-color: rgba(214, 170, 121, 0.26) !important;
 }
 
 @keyframes fade-up {
