@@ -115,7 +115,7 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
             localStorage.setItem("currentUser", JSON.stringify(user));
             onAuthSuccess(user);
         } catch (error) {
-            setAuthError(error.message || "Unable to connect to the login service.");
+            setAuthError(error.message || "We couldn't sign you in right now. Please try again.");
         } finally {
             setBusy(false);
         }
@@ -155,7 +155,7 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
             setSignupForm({ name: "", email: "", password: "", phone: "", age: "" });
             setSignupErrors({});
         } catch (error) {
-            setAuthError(error.message || "Unable to connect to the signup service.");
+            setAuthError(error.message || "We couldn't create your account right now. Please try again.");
         } finally {
             setBusy(false);
         }
@@ -200,8 +200,10 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
                 {mode === "login" ? (
                     <form onSubmit={submitLogin} className="auth-form">
                         <div>
+                            <label className="form-field-label" htmlFor="login-email">Email address</label>
                             <div className={`auth-field-wrap ${loginErrors.email ? "auth-field-error" : loginForm.email ? "auth-field-ok" : ""}`}>
                                 <input
+                                    id="login-email"
                                     style={styles.inputWide}
                                     className="field-input auth-field-input"
                                     type="email"
@@ -218,8 +220,10 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
                         </div>
 
                         <div>
+                            <label className="form-field-label" htmlFor="login-password">Password</label>
                             <div className={`auth-field-wrap ${loginErrors.password ? "auth-field-error" : loginForm.password ? "auth-field-ok" : ""}`}>
                                 <input
+                                    id="login-password"
                                     style={styles.inputWide}
                                     className="field-input auth-field-input"
                                     type={showLoginPassword ? "text" : "password"}
@@ -254,8 +258,10 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
                             ["age", "number", "Age", "off"],
                         ].map(([name, type, placeholder, autoComplete]) => (
                             <div key={name}>
+                                <label className="form-field-label" htmlFor={`signup-${name}`}>{placeholder}</label>
                                 <div className={`auth-field-wrap ${signupErrors[name] ? "auth-field-error" : signupForm[name] && !signupErrors[name] ? "auth-field-ok" : ""}`}>
                                     <input
+                                        id={`signup-${name}`}
                                         style={styles.inputWide}
                                         className="field-input auth-field-input"
                                         type={type}
@@ -276,8 +282,10 @@ export default function AuthScreen({ mode, setMode, userApiBase, onAuthSuccess }
                         ))}
 
                         <div>
+                            <label className="form-field-label" htmlFor="signup-password">Password</label>
                             <div className={`auth-field-wrap ${signupErrors.password ? "auth-field-error" : signupForm.password && !signupErrors.password ? "auth-field-ok" : ""}`}>
                                 <input
+                                    id="signup-password"
                                     style={styles.inputWide}
                                     className="field-input auth-field-input"
                                     type={showSignupPassword ? "text" : "password"}

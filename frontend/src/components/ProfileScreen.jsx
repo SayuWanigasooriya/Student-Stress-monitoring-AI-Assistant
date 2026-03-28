@@ -123,9 +123,9 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
                 if (!response.ok) throw new Error(`Photo update failed (${response.status})`);
                 const updatedUser = await response.json();
                 persistUser(updatedUser);
-                flash("Photo saved successfully!");
+                flash("Your photo was updated.");
             } catch (updateError) {
-                flash(updateError.message || "Failed to save photo.", true);
+                flash(updateError.message || "We couldn't save your photo right now.", true);
             } finally {
                 setBusy(false);
             }
@@ -146,9 +146,9 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
             const updatedUser = await response.json();
             if (fileRef.current) fileRef.current.value = "";
             persistUser(updatedUser);
-            flash("Photo removed.");
+            flash("Your photo was removed.");
         } catch (removeError) {
-            flash(removeError.message || "Failed to remove photo.", true);
+            flash(removeError.message || "We couldn't remove your photo right now.", true);
         } finally {
             setBusy(false);
         }
@@ -198,16 +198,16 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                throw new Error(data.message || `Update failed (${response.status})`);
+                throw new Error(data.message || "We couldn't save your changes right now.");
             }
 
             const updatedUser = await response.json();
             persistUser(updatedUser);
             setFieldErrors({});
             setIsEditing(false);
-            flash("Profile updated successfully!");
+            flash("Your profile has been updated.");
         } catch (updateError) {
-            flash(updateError.message || "Update failed.", true);
+            flash(updateError.message || "We couldn't save your changes right now.", true);
         } finally {
             setBusy(false);
         }
@@ -220,11 +220,11 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
             const response = await fetch(`${userApiBase}/api/users/${user.id}`, {
                 method: "DELETE",
             });
-            if (!response.ok) throw new Error(`Delete failed (${response.status})`);
+            if (!response.ok) throw new Error("We couldn't delete your account right now.");
             localStorage.removeItem("currentUser");
             onLogout();
         } catch (deleteError) {
-            flash(deleteError.message || "Delete failed.", true);
+            flash(deleteError.message || "We couldn't delete your account right now.", true);
             setShowDeleteModal(false);
         } finally {
             setBusy(false);
@@ -277,7 +277,7 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
                     <div>
                         <div style={styles.badge}>PROFILE</div>
                         <h2 style={styles.cardTitle}>My Profile</h2>
-                        <p className="section-helper">Manage your account details before starting or continuing a guidance session.</p>
+                        <p className="section-helper">Manage your account details before starting or continuing a support session.</p>
                     </div>
                 </div>
 
@@ -340,8 +340,10 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
                                 const isOk = !hasError && String(formData[name] ?? "").trim() !== "";
                                 return (
                                     <div key={name}>
+                                        <label className="form-field-label" htmlFor={`profile-${name}`}>{placeholder}</label>
                                         <div className={`auth-field-wrap ${hasError ? "auth-field-error" : isOk ? "auth-field-ok" : ""}`}>
                                             <input
+                                                id={`profile-${name}`}
                                                 style={styles.inputWide}
                                                 className="field-input auth-field-input"
                                                 type={type}

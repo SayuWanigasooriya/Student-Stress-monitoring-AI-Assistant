@@ -7,12 +7,17 @@ export default function TopicListCard({ loadingTopics, topics, startSession, bus
                 <div>
                     <div style={styles.badge}>TOPICS</div>
                     <h2 style={styles.cardTitle}>Choose a topic to begin</h2>
-                    <p className="section-helper">Pick the area you want help with, then move through the guided questions at your own pace.</p>
+                    <p className="section-helper">Choose the area you want support with, then move through the questions one step at a time.</p>
                 </div>
             </div>
 
             {loadingTopics ? (
-                <p style={styles.muted}>Loading topics…</p>
+                <p style={styles.muted}>Getting your support topics ready…</p>
+            ) : topics.length === 0 ? (
+                <div className="empty-state-card">
+                    <strong>No topics are available right now.</strong>
+                    <p>Give it a moment and try again. If this keeps happening, check that the backend is running.</p>
+                </div>
             ) : (
                 <div style={styles.topicList} className="topic-grid">
                     {topics.map((topic) => (
@@ -28,7 +33,7 @@ export default function TopicListCard({ loadingTopics, topics, startSession, bus
                                 onClick={() => startSession(topic.id)}
                                 disabled={busy || !userId}
                             >
-                                {userId ? "Start" : "Save User ID First"}
+                                {userId ? "Begin" : "Sign in to continue"}
                             </button>
                         </div>
                     ))}

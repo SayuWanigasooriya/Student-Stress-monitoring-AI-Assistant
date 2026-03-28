@@ -189,6 +189,24 @@ textarea:focus-visible {
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22);
 }
 
+.empty-state-card {
+  padding: 1.1rem 1.15rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.empty-state-card strong {
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.empty-state-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.55;
+}
+
 .result-meta {
   display: flex;
   gap: 0.8rem;
@@ -219,9 +237,9 @@ textarea:focus-visible {
 }
 
 .impact-high {
-  background: rgba(255, 102, 102, 0.15);
-  color: #ffb2b2;
-  border: 1px solid rgba(255, 102, 102, 0.26);
+  background: rgba(255, 168, 107, 0.14);
+  color: #ffd0a4;
+  border: 1px solid rgba(255, 168, 107, 0.3);
 }
 
 .recommendation-panel {
@@ -276,6 +294,14 @@ textarea:focus-visible {
   gap: 0.85rem;
 }
 
+.form-field-label {
+  display: block;
+  margin: 0 0 0.45rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .auth-field-wrap {
   position: relative;
   display: flex;
@@ -323,7 +349,7 @@ textarea:focus-visible {
 .auth-field-message {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
-  color: #ffb2b2;
+  color: #ffd0a4;
 }
 
 .auth-strength {
@@ -513,7 +539,7 @@ textarea:focus-visible {
 }
 
 .profile-link-danger {
-  color: #ffb2b2;
+  color: #ffd0a4;
 }
 
 .profile-link-danger:hover {
@@ -579,7 +605,7 @@ textarea:focus-visible {
 
 .profile-modal-icon {
   margin-bottom: 0.8rem;
-  color: #ffb2b2;
+  color: #ffd0a4;
   font-weight: 800;
 }
 

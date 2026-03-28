@@ -4,8 +4,8 @@ export default function Header({ currentUser, onOpenProfile, onOpenHome, onLogou
     return (
         <header style={styles.header} className="app-header">
             <div>
-                <h1 style={styles.title}>Topic Guidance</h1>
-                <p style={styles.subTitle}>Answer a few guided questions and get supportive next steps for what you are dealing with.</p>
+                <h1 style={styles.title}>Stress Support Assistant</h1>
+                <p style={styles.subTitle}>Take a few guided steps, reflect on what is going on, and get practical support you can use next.</p>
             </div>
 
             <div style={styles.userBox} className="user-box">
@@ -19,7 +19,7 @@ export default function Header({ currentUser, onOpenProfile, onOpenHome, onLogou
                     onClick={isProfileView ? onOpenHome : onOpenProfile}
                     disabled={busy}
                 >
-                    {isProfileView ? "Back Home" : "Profile"}
+                    {isProfileView ? "Back to Support" : "Profile"}
                 </button>
                 <button style={styles.btn} className="secondary-button" onClick={onLogout} disabled={busy}>
                     Logout

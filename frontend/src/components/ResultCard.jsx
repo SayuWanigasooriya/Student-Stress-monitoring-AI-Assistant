@@ -18,8 +18,8 @@ function ChatSection({
 
     return (
         <div style={styles.chatBox} className="chat-shell">
-            <h3 style={{ marginTop: 0 }}>Chat Assistant</h3>
-            <p style={styles.muted}>Continue the conversation below.</p>
+            <h3 style={{ marginTop: 0 }}>Support Chat</h3>
+            <p style={styles.muted}>Keep the conversation going here.</p>
 
             <div style={styles.chatMessages} className="chat-messages" ref={messagesRef}>
                 {chatMessages.map((msg, index) => (
@@ -33,7 +33,7 @@ function ChatSection({
                 ))}
                 {chatSending && (
                     <div style={styles.botBubble} className="chat-bubble-bot chat-typing">
-                        Thinking...
+                        Thinking it through...
                     </div>
                 )}
             </div>
@@ -80,15 +80,15 @@ export default function ResultCard({
             <div style={styles.cardTop} className="panel-card-top">
                 <div>
                     <div style={styles.badge}>RESULT</div>
-                    <h2 style={styles.cardTitle}>Your Guidance Summary</h2>
+                    <h2 style={styles.cardTitle}>Your Support Summary</h2>
                 </div>
 
                 <div style={styles.topButtonGroup}>
                     <button style={styles.btnGhost} className="ghost-button" onClick={openChat}>
-                        Continue with Chat
+                        Open Support Chat
                     </button>
                     <button style={styles.btnGhost} className="ghost-button" onClick={resetAll}>
-                        New Session
+                        Start Another Check-In
                     </button>
                 </div>
             </div>
@@ -97,14 +97,14 @@ export default function ResultCard({
 
             {finalResult.impactLevel && (
                 <div style={{ marginTop: 10 }} className="result-meta">
-                    <span style={styles.muted}>Impact Level</span>
+                    <span style={styles.muted}>Support Level</span>
                     <span className={impactClassName}>{finalResult.impactLevel}</span>
                 </div>
             )}
 
             {Array.isArray(finalResult.recommendations) && finalResult.recommendations.length > 0 && (
                 <div style={{ marginTop: 14 }} className="recommendation-panel">
-                    <h3 style={{ marginBottom: 8 }}>Recommendations</h3>
+                    <h3 style={{ marginBottom: 8 }}>Helpful Next Steps</h3>
                     <ul style={{ marginTop: 0 }} className="recommendation-list">
                         {finalResult.recommendations.map((recommendation, index) => (
                             <li key={index} style={{ marginBottom: 6 }}>
