@@ -233,7 +233,7 @@ Emotion-specific priority:
                         "Give balanced, respectful advice about communication, boundaries, conflict, and misunderstandings.";
 
             default:
-                return "You are a supportive topic-guidance assistant for students. " +
+                return "You are a supportive stress support assistant for students. " +
                         "Give clear, practical, empathetic advice.";
         }
     }

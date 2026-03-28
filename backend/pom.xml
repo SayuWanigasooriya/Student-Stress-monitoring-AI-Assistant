@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.sliit</groupId>
-    <artifactId>topic-guidance-backend</artifactId>
+    <artifactId>stress-monitoring-ai-assistant-backend</artifactId>
     <version>0.0.1</version>
 
     <parent>
