@@ -101,6 +101,17 @@ export const styles = {
         cursor: "pointer",
         transition: "transform 160ms ease, border-color 160ms ease, background 160ms ease",
     },
+    navBtn: {
+        minWidth: 124,
+        minHeight: 48,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        whiteSpace: "nowrap",
+        lineHeight: 1.2,
+        paddingInline: 16,
+    },
 
     optionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 },
     optionBtn: {

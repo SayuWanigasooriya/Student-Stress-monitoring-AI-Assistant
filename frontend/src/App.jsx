@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import "./App.css";
 import AuthScreen from "./components/AuthScreen";
 import DailyCheckInScreen from "./components/DailyCheckInScreen";
 import Header from "./components/Header";

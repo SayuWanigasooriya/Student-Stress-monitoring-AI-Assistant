@@ -1,6 +1,6 @@
 :root {
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
   color: #203743;
   background-color: #f4faf8;
@@ -76,6 +76,28 @@ textarea:focus-visible {
   padding: 0.5rem 0 1rem;
 }
 
+.header-brand {
+  min-width: 0;
+  max-width: 34rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-left: auto;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem;
+  border-radius: 18px;
+  border: 1px solid rgba(133, 164, 181, 0.14);
+  background: rgba(255, 255, 255, 0.46);
+}
+
 .hero-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
@@ -101,7 +123,7 @@ textarea:focus-visible {
 
 .hero-title {
   margin: 0;
-  max-width: 12ch;
+  max-width: 15ch;
   font-size: clamp(2rem, 5vw, 3.6rem);
   line-height: 0.98;
   letter-spacing: -0.05em;
@@ -112,6 +134,7 @@ textarea:focus-visible {
   margin: 1rem 0 0;
   color: #607984;
   font-size: 1rem;
+  line-height: 1.65;
 }
 
 .hero-stats {
@@ -421,6 +444,352 @@ textarea:focus-visible {
   font-size: 0.78rem;
 }
 
+.checkin-hero-soft {
+  align-items: stretch;
+}
+
+.checkin-hero-copy {
+  max-width: 58ch;
+}
+
+.checkin-hero-title {
+  margin: 0.75rem 0 0;
+  max-width: 14ch;
+  font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.checkin-hero-text {
+  max-width: 60ch;
+  margin: 1rem 0 0;
+  color: #607984;
+  line-height: 1.65;
+}
+
+.checkin-hero-stats {
+  align-content: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.checkin-tone-card {
+  background:
+    linear-gradient(135deg, rgba(124, 174, 199, 0.12), rgba(124, 201, 178, 0.12)),
+    rgba(255, 255, 255, 0.74);
+  min-height: 132px;
+  grid-column: 1 / -1;
+}
+
+.checkin-tone-card p {
+  margin: 0.6rem 0 0;
+  color: #607984;
+  line-height: 1.55;
+}
+
+.checkin-hero-stat-card {
+  min-height: 114px;
+}
+
+.checkin-hero-stat-card small {
+  display: block;
+  margin-top: 0.4rem;
+  color: #708791;
+  font-size: 0.82rem;
+}
+
+.checkin-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.daily-checkin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(320px, 0.78fr);
+  gap: 20px;
+}
+
+.checkin-main-stack,
+.daily-checkin-side {
+  display: grid;
+  gap: 20px;
+}
+
+.checkin-surface {
+  padding: 24px;
+  border-radius: 28px;
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 251, 250, 0.88));
+  box-shadow: 0 20px 42px rgba(77, 108, 119, 0.1);
+  backdrop-filter: blur(14px);
+}
+
+.checkin-form-surface {
+  background:
+    linear-gradient(135deg, rgba(124, 174, 199, 0.1), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 251, 250, 0.9));
+}
+
+.checkin-insights-surface {
+  position: sticky;
+  top: 22px;
+}
+
+.checkin-surface-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.checkin-surface-head h3 {
+  margin: 0.35rem 0 0;
+  font-size: 1.6rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.checkin-surface-head p {
+  margin: 0;
+  max-width: 26ch;
+  color: #607984;
+  line-height: 1.6;
+}
+
+.checkin-kicker {
+  display: inline-block;
+  color: #5e8ba3;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.checkin-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.checkin-mood-card {
+  padding: 16px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(133, 164, 181, 0.18);
+  background: rgba(255, 255, 255, 0.76);
+  color: #203743;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.checkin-mood-card:hover,
+.checkin-mood-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--mood-accent) 45%, white);
+  box-shadow: 0 14px 24px rgba(73, 109, 119, 0.08);
+  outline: none;
+}
+
+.checkin-mood-card.is-active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), color-mix(in srgb, var(--mood-accent) 14%, white));
+  border-color: var(--mood-accent);
+}
+
+.checkin-mood-icon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mood-accent) 14%, white);
+  color: var(--mood-accent);
+  font-size: 1.05rem;
+}
+
+.checkin-mood-card strong {
+  display: block;
+  margin-top: 0.85rem;
+}
+
+.checkin-mood-card p {
+  margin: 0.45rem 0 0;
+  color: #607984;
+  line-height: 1.55;
+}
+
+.checkin-slider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 1.15rem;
+}
+
+.checkin-slider-card {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(133, 164, 181, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), color-mix(in srgb, var(--slider-tint) 12%, white));
+}
+
+.checkin-slider-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.checkin-slider-head span,
+.checkin-slider-scale,
+.checkin-form-footer p,
+.checkin-summary-box p,
+.checkin-empty-state p,
+.insight-card p,
+.entry-card p,
+.mini-list-block li {
+  color: #607984;
+}
+
+.checkin-slider-card input[type="range"] {
+  width: 100%;
+  accent-color: #5f95aa;
+}
+
+.checkin-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.checkin-notes-block {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.15rem;
+}
+
+.checkin-form-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.15rem;
+}
+
+.checkin-form-footer p {
+  margin: 0;
+  max-width: 34ch;
+  line-height: 1.6;
+}
+
+.checkin-summary-box,
+.checkin-empty-state,
+.insight-card,
+.entry-card {
+  border-radius: 20px;
+  border: 1px solid rgba(133, 164, 181, 0.16);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.checkin-summary-box,
+.checkin-empty-state,
+.entry-card {
+  padding: 16px;
+}
+
+.insight-list,
+.entry-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.insight-card {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+
+.insight-accent {
+  display: block;
+  border-radius: 999px;
+}
+
+.insight-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.insight-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 174, 199, 0.24);
+  background: rgba(124, 174, 199, 0.12);
+  color: #476b7d;
+  font-size: 0.9rem;
+}
+
+.mini-list-block {
+  margin-top: 1rem;
+}
+
+.mini-list-block h4 {
+  margin: 0 0 0.65rem;
+}
+
+.mini-list-block ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.entry-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.entry-card-top strong {
+  display: block;
+}
+
+.entry-card-top span {
+  display: block;
+  margin-top: 0.35rem;
+  color: #758b97;
+  font-size: 0.84rem;
+}
+
+.entry-rating-pill {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(124, 201, 178, 0.12);
+  color: #3e6b61;
+  font-size: 0.82rem;
+}
+
+.entry-measure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0.8rem;
+}
+
+.entry-measure-row span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(243, 247, 248, 0.96);
+  border: 1px solid rgba(111, 141, 156, 0.14);
+  color: #5d7380;
+  font-size: 0.84rem;
+}
+
 .profile-layout {
   min-height: calc(100vh - 3rem);
 }
@@ -674,5 +1043,69 @@ textarea:focus-visible {
   .profile-modal-actions,
   .profile-actions {
     flex-direction: column;
+  }
+}
+@media (max-width: 1120px) {
+  .app-header,
+  .hero-panel,
+  .daily-checkin-grid,
+  .checkin-slider-grid,
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .checkin-insights-surface {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-header,
+  .header-actions,
+  .checkin-surface-head,
+  .checkin-form-footer,
+  .entry-card-top,
+  .profile-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-header {
+    gap: 1rem;
+  }
+
+  .header-user-meta {
+    align-items: flex-start;
+  }
+
+  .header-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .header-nav .ghost-button,
+  .header-actions > .ghost-button {
+    width: 100%;
+  }
+
+  .hero-title,
+  .checkin-hero-title {
+    max-width: none;
+  }
+
+  .hero-stats,
+  .checkin-hero-stats,
+  .checkin-slider-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkin-mood-grid {
+    grid-template-columns: 1fr;
   }
 }

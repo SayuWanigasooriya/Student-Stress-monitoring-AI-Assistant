@@ -187,7 +187,7 @@ export default function DailyCheckInScreen({ currentUser }) {
 
     return (
         <section className="checkin-shell">
-            <div className="checkin-hero">
+            <section className="hero-panel checkin-hero-soft">
                 <div className="checkin-hero-copy">
                     <span style={styles.badge}>Daily Check-In</span>
                     <h2 className="checkin-hero-title">A calmer way to track how your day is actually feeling.</h2>
@@ -196,35 +196,24 @@ export default function DailyCheckInScreen({ currentUser }) {
                     </p>
                 </div>
 
-                <div className="checkin-hero-panel">
-                    <div className="checkin-hero-topline">
-                        <span className="checkin-hero-eyebrow">Current Tone</span>
+                <div className="hero-stats checkin-hero-stats">
+                    <div className="hero-stat-card checkin-tone-card">
+                        <span className="hero-stat-label">Current Tone</span>
                         <strong style={{ color: selectedMood.accent }}>{latestEntry?.mood || form.mood}</strong>
+                        <p>{toneSummary}</p>
                     </div>
-                    <p>{toneSummary}</p>
-                    <div className="checkin-hero-metrics">
-                        {stats.slice(1).map((item) => (
-                            <div key={item.label} className="checkin-hero-metric">
-                                <span>{item.label}</span>
-                                <strong>{item.value}/5</strong>
-                            </div>
-                        ))}
-                    </div>
+                    {stats.map((item) => (
+                        <div key={item.label} className="hero-stat-card checkin-hero-stat-card">
+                            <span className="hero-stat-label">{item.label}</span>
+                            <strong>{item.value}{item.label === "Total Entries" ? "" : "/5"}</strong>
+                            <small>{item.detail}</small>
+                        </div>
+                    ))}
                 </div>
-            </div>
+            </section>
 
             {error ? <div style={styles.error}>{error}</div> : null}
             {success ? <div style={styles.success}>{success}</div> : null}
-
-            <div className="checkin-stat-strip">
-                {stats.map((item) => (
-                    <article key={item.label} className="checkin-stat-tile">
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                        <small>{item.detail}</small>
-                    </article>
-                ))}
-            </div>
 
             <div className="daily-checkin-grid">
                 <div className="checkin-main-stack">
