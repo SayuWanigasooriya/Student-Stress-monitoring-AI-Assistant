@@ -1,6 +1,9 @@
 import { styles } from "../styles";
 
-export default function Header({ currentUser, onOpenProfile, onOpenHome, onLogout, busy, isProfileView }) {
+export default function Header({ currentUser, onOpenProfile, onOpenHome, onOpenCheckIn, onLogout, busy, activeView }) {
+    const isProfileView = activeView === "profile";
+    const isCheckInView = activeView === "checkin";
+
     return (
         <header style={styles.header} className="app-header">
             <div>
@@ -16,10 +19,26 @@ export default function Header({ currentUser, onOpenProfile, onOpenHome, onLogou
                 <button
                     style={styles.btnGhost}
                     className="ghost-button"
-                    onClick={isProfileView ? onOpenHome : onOpenProfile}
+                    onClick={onOpenHome}
                     disabled={busy}
                 >
-                    {isProfileView ? "Back to Support" : "Profile"}
+                    Home
+                </button>
+                <button
+                    style={isCheckInView ? styles.btnPrimary : styles.btnGhost}
+                    className="ghost-button"
+                    onClick={onOpenCheckIn}
+                    disabled={busy}
+                >
+                    Daily Check-In
+                </button>
+                <button
+                    style={isProfileView ? styles.btnPrimary : styles.btnGhost}
+                    className="ghost-button"
+                    onClick={onOpenProfile}
+                    disabled={busy}
+                >
+                    Profile
                 </button>
                 <button style={styles.btn} className="secondary-button" onClick={onLogout} disabled={busy}>
                     Logout

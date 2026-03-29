@@ -1,9 +1,11 @@
 package com.sliit.tg.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import com.sliit.tg.dto.EmotionResponse;
 import com.sliit.tg.model.ChatMessage;
+import com.sliit.tg.model.MoodEntry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +18,15 @@ public class GeminiService {
     private final Client client;
     private final String modelName;
     private final boolean enabled;
+    private final String apiKey;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public GeminiService(
-            @Value("${app.gemini.model:gemini-2.5-flash}") String modelName
+            @Value("${app.gemini.model:gemini-2.5-flash}") String modelName,
+            @Value("${app.gemini.api-key:}") String apiKey
     ) {
         this.modelName = modelName;
+        this.apiKey = apiKey;
         Client builtClient = null;
         boolean clientEnabled = false;
 
@@ -33,6 +39,72 @@ public class GeminiService {
 
         this.client = builtClient;
         this.enabled = clientEnabled;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> generateMoodInsights(List<MoodEntry> recentEntries) {
+        if (!enabled || client == null || apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("Gemini client is not configured for mood insights.");
+        }
+
+        StringBuilder context = new StringBuilder("Here is the student's recent daily check-in data:\n");
+        for (MoodEntry entry : recentEntries) {
+            context.append(String.format(
+                    "Date: %s | Mood: %s | Stress: %d/5 | Energy: %d/5 | Sleep: %d/5 | Notes: %s%n",
+                    entry.getDate().toLocalDate(),
+                    entry.getMood(),
+                    entry.getStressLevel(),
+                    entry.getEnergyLevel(),
+                    entry.getSleepQuality(),
+                    entry.getNotes() == null || entry.getNotes().isBlank() ? "None" : entry.getNotes()
+            ));
+        }
+
+        String prompt = context + """
+
+You are an empathetic student wellness assistant.
+Analyze the daily check-in trend and return only valid JSON with this exact shape:
+{
+  "insights": [{ "icon": "string", "title": "string", "message": "string", "color": "string" }],
+  "affirmations": ["string"],
+  "suggestions": [{ "title": "string", "description": "string", "duration": "string" }],
+  "summary": {
+    "text": "string",
+    "highlights": [{ "text": "string", "color": "string" }]
+  }
+}
+
+Rules:
+- Keep the tone warm, grounded, and non-clinical.
+- Do not diagnose conditions.
+- Base recommendations on the provided data.
+- Return 2 to 3 insights, 3 affirmations, and 2 to 4 suggestions.
+- Use calm colors such as rgba(124, 174, 199, 1), rgba(124, 201, 178, 1), or rgba(246, 191, 120, 1).
+- Do not wrap the JSON in markdown fences.
+""";
+
+        GenerateContentResponse response;
+        try {
+            response = client.models.generateContent(modelName, prompt, null);
+        } catch (Exception e) {
+            throw new IllegalStateException("Gemini mood insight generation failed.", e);
+        }
+
+        if (response.text() == null || response.text().isBlank()) {
+            throw new IllegalStateException("Gemini returned an empty mood insight response.");
+        }
+
+        String rawJson = response.text()
+                .replaceAll("^```json\\s*", "")
+                .replaceAll("^```\\s*", "")
+                .replaceAll("\\s*```$", "")
+                .trim();
+
+        try {
+            return objectMapper.readValue(rawJson, Map.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("Gemini returned invalid mood insight JSON.", e);
+        }
     }
 
     public String getReply(String topicCode,

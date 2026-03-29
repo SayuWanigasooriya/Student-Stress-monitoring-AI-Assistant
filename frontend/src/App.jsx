@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthScreen from "./components/AuthScreen";
+import DailyCheckInScreen from "./components/DailyCheckInScreen";
 import Header from "./components/Header";
 import ProfileScreen from "./components/ProfileScreen";
 import QuestionCard from "./components/QuestionCard";
@@ -305,7 +306,8 @@ export default function App() {
     };
 
     const isProfileView = Boolean(currentUser) && activeView === "profile";
-    const isHomeScreen = !question && !finalResult && !isProfileView;
+    const isCheckInView = Boolean(currentUser) && activeView === "checkin";
+    const isHomeScreen = !question && !finalResult && !isProfileView && !isCheckInView;
 
     return (
         <div style={styles.page} className="app-shell">
@@ -326,9 +328,10 @@ export default function App() {
                             currentUser={currentUser}
                             onOpenProfile={() => setActiveView("profile")}
                             onOpenHome={() => setActiveView("home")}
+                            onOpenCheckIn={() => setActiveView("checkin")}
                             onLogout={handleLogout}
                             busy={busy}
-                            isProfileView={isProfileView}
+                            activeView={activeView}
                         />
 
                         {error && <div style={styles.error}>{error}</div>}
@@ -341,6 +344,8 @@ export default function App() {
                                 onLogout={handleLogout}
                             />
                         ) : null}
+
+                        {isCheckInView ? <DailyCheckInScreen currentUser={currentUser} /> : null}
 
                         {isHomeScreen && (
                             <section className="hero-panel">

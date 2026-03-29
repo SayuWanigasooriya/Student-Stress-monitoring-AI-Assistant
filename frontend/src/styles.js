@@ -215,5 +215,13 @@ export const styles = {
         border: "1px solid rgba(214, 149, 117, 0.26)",
         color: "#7b4f3b",
     },
+    success: {
+        marginTop: 18,
+        padding: 14,
+        borderRadius: 16,
+        background: "rgba(124, 201, 178, 0.18)",
+        border: "1px solid rgba(109, 181, 160, 0.32)",
+        color: "#255247",
+    },
     footer: { marginTop: 20, textAlign: "center", paddingBottom: 16, color: "#617884" },
 };
