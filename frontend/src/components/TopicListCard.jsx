@@ -1,6 +1,7 @@
 import { styles } from "../styles";
+import StatusPanel from "./StatusPanel";
 
-export default function TopicListCard({ loadingTopics, topics, startSession, busy, userId }) {
+export default function TopicListCard({ loadingTopics, topics, startSession, busy, userId, onRetry }) {
     return (
         <div style={styles.card} className="panel-card">
             <div style={styles.cardTop} className="panel-card-top">
@@ -12,12 +13,18 @@ export default function TopicListCard({ loadingTopics, topics, startSession, bus
             </div>
 
             {loadingTopics ? (
-                <p style={styles.muted}>Getting your support topics ready…</p>
+                <StatusPanel
+                    tone="neutral"
+                    title="Getting your support topics ready"
+                    message="Pulling in the guided areas so you can pick up from a calmer starting point."
+                />
             ) : topics.length === 0 ? (
-                <div className="empty-state-card">
-                    <strong>No topics are available right now.</strong>
-                    <p>Give it a moment and try again. If this keeps happening, check that the backend is running.</p>
-                </div>
+                <StatusPanel
+                    tone="warning"
+                    title="No topics are available right now"
+                    message="Give it a moment and try again. If this keeps happening, check that the backend is running."
+                    action={onRetry ? { label: "Reload topics", onClick: onRetry } : undefined}
+                />
             ) : (
                 <div style={styles.topicList} className="topic-grid">
                     {topics.map((topic) => (

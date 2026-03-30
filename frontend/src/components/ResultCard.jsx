@@ -1,5 +1,6 @@
 import { styles } from "../styles";
 import { useEffect, useRef } from "react";
+import StatusPanel from "./StatusPanel";
 
 function ChatSection({
     chatMessages,
@@ -102,7 +103,7 @@ export default function ResultCard({
                 </div>
             )}
 
-            {Array.isArray(finalResult.recommendations) && finalResult.recommendations.length > 0 && (
+            {Array.isArray(finalResult.recommendations) && finalResult.recommendations.length > 0 ? (
                 <div style={{ marginTop: 14 }} className="recommendation-panel">
                     <h3 style={{ marginBottom: 8 }}>Helpful Next Steps</h3>
                     <ul style={{ marginTop: 0 }} className="recommendation-list">
@@ -112,6 +113,14 @@ export default function ResultCard({
                             </li>
                         ))}
                     </ul>
+                </div>
+            ) : (
+                <div style={{ marginTop: 14 }}>
+                    <StatusPanel
+                        tone="neutral"
+                        title="More guidance can build from here"
+                        message="You have your summary already. Open the support chat if you want more tailored next steps."
+                    />
                 </div>
             )}
 

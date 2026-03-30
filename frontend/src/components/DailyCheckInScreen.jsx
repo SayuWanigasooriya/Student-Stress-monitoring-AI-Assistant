@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import StatusPanel from "./StatusPanel";
 import { styles } from "../styles";
 import { API_BASE, getFriendlyMessage } from "../utils/appHelpers";
 
@@ -11,27 +12,9 @@ const moodOptions = [
 ];
 
 const scoreConfig = [
-    {
-        key: "stressLevel",
-        title: "Stress",
-        low: "Light",
-        high: "Heavy",
-        tint: "var(--checkin-sand)",
-    },
-    {
-        key: "energyLevel",
-        title: "Energy",
-        low: "Drained",
-        high: "Full",
-        tint: "var(--checkin-mint)",
-    },
-    {
-        key: "sleepQuality",
-        title: "Sleep",
-        low: "Broken",
-        high: "Restful",
-        tint: "var(--checkin-sky)",
-    },
+    { key: "stressLevel", title: "Stress", low: "Light", high: "Heavy", tint: "var(--checkin-sand)" },
+    { key: "energyLevel", title: "Energy", low: "Drained", high: "Full", tint: "var(--checkin-mint)" },
+    { key: "sleepQuality", title: "Sleep", low: "Broken", high: "Restful", tint: "var(--checkin-sky)" },
 ];
 
 function averageFrom(entries, key) {
@@ -72,13 +55,192 @@ function getToneSummary(mood, entries) {
     return "Your recent pattern looks mixed, which is normal. Consistency matters more than perfection.";
 }
 
+function getRecentEntries(entries, limit = 7) {
+    return [...entries].slice(0, limit).reverse();
+}
+
+function createLinePoints(values, width, height) {
+    if (!values.length) return "";
+
+    const xStep = values.length > 1 ? width / (values.length - 1) : width / 2;
+    return values.map((value, index) => {
+        const x = values.length > 1 ? index * xStep : width / 2;
+        const y = height - ((value - 1) / 4) * height;
+        return `${x},${y}`;
+    }).join(" ");
+}
+
+function summarizeMoodFrequency(entries) {
+    return moodOptions
+        .map((option) => ({
+            ...option,
+            count: entries.filter((entry) => entry.mood === option.value).length,
+        }))
+        .filter((item) => item.count > 0)
+        .sort((left, right) => right.count - left.count);
+}
+
+function SparklineCard({ title, detail, values, accent }) {
+    const width = 240;
+    const height = 72;
+    const points = createLinePoints(values, width, height);
+
+    return (
+        <article className="trend-card">
+            <div className="trend-card-head">
+                <div>
+                    <span className="checkin-kicker">{title}</span>
+                    <h4>{detail}</h4>
+                </div>
+                <strong>{values.length ? `${values[values.length - 1]}/5` : "--"}</strong>
+            </div>
+
+            {values.length ? (
+                <svg viewBox={`0 0 ${width} ${height}`} className="trend-sparkline" role="img" aria-label={`${title} trend`}>
+                    <polyline
+                        fill="none"
+                        stroke={accent}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={points}
+                    />
+                    {values.map((value, index) => {
+                        const pointList = points.split(" ");
+                        const [cx, cy] = pointList[index].split(",");
+                        return <circle key={`${title}-${index}`} cx={cx} cy={cy} r="4.5" fill={accent} />;
+                    })}
+                </svg>
+            ) : (
+                <div className="trend-chart-empty">No data yet</div>
+            )}
+        </article>
+    );
+}
+
+function MetricBand({ title, average, latest, accent }) {
+    return (
+        <article className="metric-band-card">
+            <div className="metric-band-copy">
+                <span className="checkin-kicker">{title}</span>
+                <strong>{average}/5 average</strong>
+                <small>Latest: {latest ? `${latest}/5` : "--"}</small>
+            </div>
+            <div className="metric-band-track">
+                <span className="metric-band-fill" style={{ width: `${(Number(average) / 5) * 100}%`, background: accent }} />
+            </div>
+        </article>
+    );
+}
+
+function WeeklyTrendPanel({ entries, loading, error, onRetry }) {
+    const recentEntries = useMemo(() => getRecentEntries(entries), [entries]);
+    const moodFrequency = useMemo(() => summarizeMoodFrequency(recentEntries), [recentEntries]);
+    const stressValues = useMemo(() => recentEntries.map((entry) => Number(entry.stressLevel || 0)), [recentEntries]);
+    const energyValues = useMemo(() => recentEntries.map((entry) => Number(entry.energyLevel || 0)), [recentEntries]);
+    const sleepValues = useMemo(() => recentEntries.map((entry) => Number(entry.sleepQuality || 0)), [recentEntries]);
+
+    return (
+        <div className="checkin-surface">
+            <div className="checkin-surface-head">
+                <div>
+                    <span className="checkin-kicker">Weekly Trends</span>
+                    <h3>See what the last few check-ins are saying</h3>
+                </div>
+                <p>Short visual cues make it easier to spot pressure, recovery, and the moods repeating most.</p>
+            </div>
+
+            {loading ? (
+                <StatusPanel
+                    tone="neutral"
+                    title="Building your trend snapshot"
+                    message="Pulling together the latest check-ins into a clearer weekly read."
+                />
+            ) : error ? (
+                <StatusPanel
+                    tone="error"
+                    title="The weekly chart could not load"
+                    message={error}
+                    action={{ label: "Try again", onClick: onRetry }}
+                />
+            ) : recentEntries.length === 0 ? (
+                <StatusPanel
+                    tone="warning"
+                    title="Your weekly trends will appear here"
+                    message="Save a few check-ins and this section will turn them into simple visual patterns."
+                />
+            ) : (
+                <div className="trend-grid">
+                    <SparklineCard
+                        title="Stress Trend"
+                        detail="How pressure has shifted across recent check-ins"
+                        values={stressValues}
+                        accent="#d29c5e"
+                    />
+                    <div className="trend-card trend-stack-card">
+                        <div className="trend-card-head">
+                            <div>
+                                <span className="checkin-kicker">Energy + Sleep</span>
+                                <h4>Your recovery signals at a glance</h4>
+                            </div>
+                        </div>
+                        <div className="metric-band-grid">
+                            <MetricBand
+                                title="Energy"
+                                average={averageFrom(recentEntries, "energyLevel")}
+                                latest={recentEntries[recentEntries.length - 1]?.energyLevel}
+                                accent="linear-gradient(90deg, #8fd1bc, #61b89d)"
+                            />
+                            <MetricBand
+                                title="Sleep"
+                                average={averageFrom(recentEntries, "sleepQuality")}
+                                latest={recentEntries[recentEntries.length - 1]?.sleepQuality}
+                                accent="linear-gradient(90deg, #aac9de, #6f97bb)"
+                            />
+                        </div>
+                        <div className="trend-inline-metrics">
+                            <span>Energy {energyValues[energyValues.length - 1] || "--"}/5</span>
+                            <span>Sleep {sleepValues[sleepValues.length - 1] || "--"}/5</span>
+                        </div>
+                    </div>
+
+                    <div className="trend-card trend-wide-card">
+                        <div className="trend-card-head">
+                            <div>
+                                <span className="checkin-kicker">Mood Frequency</span>
+                                <h4>What has been showing up most often</h4>
+                            </div>
+                            <strong>{recentEntries.length} entries</strong>
+                        </div>
+                        <div className="mood-frequency-row">
+                            {moodFrequency.map((item) => (
+                                <span
+                                    key={item.value}
+                                    className="mood-frequency-chip"
+                                    style={{ "--mood-accent": item.accent }}
+                                >
+                                    <span aria-hidden="true">{item.icon}</span>
+                                    {item.value}
+                                    <strong>{item.count}</strong>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function DailyCheckInScreen({ currentUser }) {
     const [entries, setEntries] = useState([]);
     const [insights, setInsights] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [loadingEntries, setLoadingEntries] = useState(true);
     const [loadingInsights, setLoadingInsights] = useState(true);
-    const [error, setError] = useState("");
+    const [entriesError, setEntriesError] = useState("");
+    const [insightsError, setInsightsError] = useState("");
+    const [submitError, setSubmitError] = useState("");
     const [success, setSuccess] = useState("");
     const [form, setForm] = useState({
         mood: "Okay",
@@ -94,6 +256,7 @@ export default function DailyCheckInScreen({ currentUser }) {
         if (!userId) return;
         try {
             setLoadingEntries(true);
+            setEntriesError("");
             const response = await fetch(`${API_BASE}/api/mood-entries?userId=${userId}`);
             if (!response.ok) {
                 throw new Error("We couldn't load your daily check-ins right now.");
@@ -101,7 +264,7 @@ export default function DailyCheckInScreen({ currentUser }) {
             const data = await response.json();
             setEntries(Array.isArray(data) ? data : []);
         } catch (e) {
-            setError(getFriendlyMessage(e, "We couldn't load your daily check-ins right now."));
+            setEntriesError(getFriendlyMessage(e, "We couldn't load your daily check-ins right now."));
         } finally {
             setLoadingEntries(false);
         }
@@ -111,21 +274,21 @@ export default function DailyCheckInScreen({ currentUser }) {
         if (!userId) return;
         try {
             setLoadingInsights(true);
+            setInsightsError("");
             const response = await fetch(`${API_BASE}/api/ai-insights?userId=${userId}`);
             if (!response.ok) {
                 throw new Error("We couldn't load your AI insights right now.");
             }
-            const data = await response.json();
-            setInsights(data);
+            setInsights(await response.json());
         } catch (e) {
-            setError(getFriendlyMessage(e, "We couldn't load your AI insights right now."));
+            setInsightsError(getFriendlyMessage(e, "We couldn't load your AI insights right now."));
         } finally {
             setLoadingInsights(false);
         }
     }, [userId]);
 
     useEffect(() => {
-        setError("");
+        setSubmitError("");
         setSuccess("");
         loadEntries();
         loadInsights();
@@ -151,7 +314,7 @@ export default function DailyCheckInScreen({ currentUser }) {
 
         try {
             setSubmitting(true);
-            setError("");
+            setSubmitError("");
             setSuccess("");
 
             const response = await fetch(`${API_BASE}/api/mood-entries`, {
@@ -179,7 +342,7 @@ export default function DailyCheckInScreen({ currentUser }) {
             setSuccess("Your daily check-in has been saved.");
             await Promise.all([loadEntries(), loadInsights()]);
         } catch (e) {
-            setError(getFriendlyMessage(e, "We couldn't save your daily check-in right now."));
+            setSubmitError(getFriendlyMessage(e, "We couldn't save your daily check-in right now."));
         } finally {
             setSubmitting(false);
         }
@@ -205,14 +368,19 @@ export default function DailyCheckInScreen({ currentUser }) {
                     {stats.map((item) => (
                         <div key={item.label} className="hero-stat-card checkin-hero-stat-card">
                             <span className="hero-stat-label">{item.label}</span>
-                            <strong>{item.value}{item.label === "Total Entries" ? "" : "/5"}</strong>
+                            <strong>
+                                {item.value}
+                                {item.label === "Total Entries" ? "" : "/5"}
+                            </strong>
                             <small>{item.detail}</small>
                         </div>
                     ))}
                 </div>
             </section>
 
-            {error ? <div style={styles.error}>{error}</div> : null}
+            {submitError ? (
+                <StatusPanel tone="error" title="This check-in did not save" message={submitError} />
+            ) : null}
             {success ? <div style={styles.success}>{success}</div> : null}
 
             <div className="daily-checkin-grid">
@@ -234,9 +402,7 @@ export default function DailyCheckInScreen({ currentUser }) {
                                         key={option.value}
                                         type="button"
                                         className={`checkin-mood-card${isActive ? " is-active" : ""}`}
-                                        style={{
-                                            "--mood-accent": option.accent,
-                                        }}
+                                        style={{ "--mood-accent": option.accent }}
                                         onClick={() => setForm((current) => ({ ...current, mood: option.value }))}
                                     >
                                         <span className="checkin-mood-icon" aria-hidden="true">{option.icon}</span>
@@ -285,11 +451,18 @@ export default function DailyCheckInScreen({ currentUser }) {
 
                         <div className="checkin-form-footer">
                             <p>Your entries stay simple on purpose: one honest minute is enough.</p>
-                            <button type="submit" style={styles.btnPrimary} disabled={submitting}>
+                            <button type="submit" style={styles.btnPrimary} className="primary-button" disabled={submitting}>
                                 {submitting ? "Saving..." : "Save Check-In"}
                             </button>
                         </div>
                     </form>
+
+                    <WeeklyTrendPanel
+                        entries={entries}
+                        loading={loadingEntries}
+                        error={entriesError}
+                        onRetry={loadEntries}
+                    />
 
                     <div className="checkin-surface">
                         <div className="checkin-surface-head">
@@ -301,12 +474,24 @@ export default function DailyCheckInScreen({ currentUser }) {
                         </div>
 
                         {loadingEntries ? (
-                            <p style={styles.muted}>Loading entries...</p>
+                            <StatusPanel
+                                tone="neutral"
+                                title="Loading your recent entries"
+                                message="Pulling in the latest snapshots so you can review them without digging."
+                            />
+                        ) : entriesError ? (
+                            <StatusPanel
+                                tone="error"
+                                title="Your entry history is unavailable"
+                                message={entriesError}
+                                action={{ label: "Reload entries", onClick: loadEntries }}
+                            />
                         ) : entries.length === 0 ? (
-                            <div className="checkin-empty-state">
-                                <strong>No entries yet.</strong>
-                                <p>Your first check-in will start building the pattern here.</p>
-                            </div>
+                            <StatusPanel
+                                tone="warning"
+                                title="No entries yet"
+                                message="Your first check-in will start building the history and weekly pattern here."
+                            />
                         ) : (
                             <div className="entry-list">
                                 {entries.slice(0, 6).map((entry) => (
@@ -344,7 +529,24 @@ export default function DailyCheckInScreen({ currentUser }) {
                         </div>
 
                         {loadingInsights ? (
-                            <p style={styles.muted}>Loading insights...</p>
+                            <StatusPanel
+                                tone="neutral"
+                                title="Reading your recent pattern"
+                                message="The assistant is pulling together the latest summary and next-step ideas."
+                            />
+                        ) : insightsError ? (
+                            <StatusPanel
+                                tone="error"
+                                title="Your insights are unavailable"
+                                message={insightsError}
+                                action={{ label: "Reload insights", onClick: loadInsights }}
+                            />
+                        ) : !insights?.summary?.text && !(insights?.insights || []).length ? (
+                            <StatusPanel
+                                tone="warning"
+                                title="Insights will get sharper with more check-ins"
+                                message="Keep logging a few honest snapshots and the assistant will start surfacing stronger patterns here."
+                            />
                         ) : (
                             <>
                                 <div className="checkin-summary-box">
@@ -370,23 +572,27 @@ export default function DailyCheckInScreen({ currentUser }) {
                                     ))}
                                 </div>
 
-                                <div className="mini-list-block">
-                                    <h4>Affirmations</h4>
-                                    <ul>
-                                        {(insights?.affirmations || []).map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
-                                    </ul>
-                                </div>
+                                {(insights?.affirmations || []).length ? (
+                                    <div className="mini-list-block">
+                                        <h4>Affirmations</h4>
+                                        <ul>
+                                            {(insights?.affirmations || []).map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                ) : null}
 
-                                <div className="mini-list-block">
-                                    <h4>Suggested next steps</h4>
-                                    <ul>
-                                        {(insights?.suggestions || []).map((item, index) => (
-                                            <li key={`${item.title}-${index}`}>
-                                                <strong>{item.title}</strong>: {item.description} ({item.duration})
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
+                                {(insights?.suggestions || []).length ? (
+                                    <div className="mini-list-block">
+                                        <h4>Suggested next steps</h4>
+                                        <ul>
+                                            {(insights?.suggestions || []).map((item, index) => (
+                                                <li key={`${item.title}-${index}`}>
+                                                    <strong>{item.title}</strong>: {item.description} ({item.duration})
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ) : null}
                             </>
                         )}
                     </div>
