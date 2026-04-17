@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class GeminiService {
     private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
+    private static final int CHAT_MAX_ATTEMPTS = 2;
+    private static final long CHAT_RETRY_DELAY_MS = 350L;
 
     private final Client client;
     private final String modelName;
@@ -241,23 +244,46 @@ Emotion-specific priority:
             return new GeminiReply(buildFallbackReply(normalizedEmotion, topicCode), "fallback", "not_configured");
         }
 
-        GenerateContentResponse response;
-        try {
-            response = client.models.generateContent(
-                    modelName,
-                    prompt.toString(),
-                    null
-            );
-        } catch (Exception e) {
-            logger.error("Gemini chat request failed. model={}, emotion={}, topicCode={}, message={}",
-                    modelName, normalizedEmotion, topicCode, userMessage, e);
+        GenerateContentResponse response = null;
+        Exception lastError = null;
+
+        for (int attempt = 1; attempt <= CHAT_MAX_ATTEMPTS; attempt++) {
+            try {
+                response = client.models.generateContent(
+                        modelName,
+                        prompt.toString(),
+                        null
+                );
+                break;
+            } catch (Exception e) {
+                lastError = e;
+                logger.warn(
+                        "Gemini chat request attempt {} failed. model={}, emotion={}, topicCode={}, message={}, errorType={}, errorMessage={}",
+                        attempt,
+                        modelName,
+                        normalizedEmotion,
+                        topicCode,
+                        abbreviateForLogs(userMessage),
+                        e.getClass().getSimpleName(),
+                        Optional.ofNullable(e.getMessage()).orElse("n/a")
+                );
+
+                if (attempt < CHAT_MAX_ATTEMPTS) {
+                    sleepBeforeRetry();
+                }
+            }
+        }
+
+        if (response == null) {
+            logger.error("Gemini chat request failed after {} attempts. model={}, emotion={}, topicCode={}, message={}",
+                    CHAT_MAX_ATTEMPTS, modelName, normalizedEmotion, topicCode, abbreviateForLogs(userMessage), lastError);
             return new GeminiReply(buildFallbackReply(normalizedEmotion, topicCode), "fallback", "api_error");
         }
 
         if (response.text() == null || response.text().isBlank()) {
             logger.warn("Gemini returned an empty chat response. model={}, emotion={}, topicCode={}",
                     modelName, normalizedEmotion, topicCode);
-            return new GeminiReply("I'm here to help. Could you tell me a bit more?", "gemini", null);
+            return new GeminiReply("I'm here to help. Could you tell me a bit more?", "gemini_empty", "empty_response");
         }
 
         String reply = response.text();
@@ -289,6 +315,25 @@ Emotion-specific priority:
         }
 
         return "I'm here to help. Tell me a little more about what's feeling hardest right now.";
+    }
+
+    private void sleepBeforeRetry() {
+        try {
+            Thread.sleep(CHAT_RETRY_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private String abbreviateForLogs(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String trimmed = value.trim().replaceAll("\\s+", " ");
+        if (trimmed.length() <= 80) {
+            return trimmed;
+        }
+        return trimmed.substring(0, 77) + "...";
     }
 
     private String buildSystemPrompt(String topicCode) {

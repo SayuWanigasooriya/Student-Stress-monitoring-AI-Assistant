@@ -1,6 +1,7 @@
 package com.sliit.tg.service;
 
 import com.sliit.tg.dto.ChatSessionSummaryResponse;
+import com.sliit.tg.dto.ChatMessageResponse;
 import com.sliit.tg.dto.EmotionResponse;
 import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
@@ -36,8 +37,15 @@ public class ChatService {
         return chatSessionRepository.save(session);
     }
 
-    public List<ChatMessage> getMessages(Long sessionId) {
-        return chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+    public List<ChatMessageResponse> getMessages(Long sessionId) {
+        return chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId).stream()
+                .map(message -> new ChatMessageResponse(
+                        message.getId(),
+                        message.getSender(),
+                        message.getMessage(),
+                        message.getCreatedAt()
+                ))
+                .toList();
     }
 
     public List<ChatSessionSummaryResponse> getSessionSummaries() {

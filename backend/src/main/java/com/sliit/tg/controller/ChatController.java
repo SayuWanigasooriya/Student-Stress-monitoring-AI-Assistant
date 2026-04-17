@@ -1,9 +1,9 @@
 package com.sliit.tg.controller;
 
 import com.sliit.tg.dto.ChatReplyResponse;
+import com.sliit.tg.dto.ChatMessageResponse;
 import com.sliit.tg.dto.ChatSessionSummaryResponse;
 import com.sliit.tg.dto.GeminiReply;
-import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.service.ChatService;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +43,7 @@ public class ChatController {
     }
 
     @GetMapping("/session/{sessionId}/messages")
-    public List<ChatMessage> getMessages(@PathVariable Long sessionId) {
+    public List<ChatMessageResponse> getMessages(@PathVariable Long sessionId) {
         return chatService.getMessages(sessionId);
     }
 

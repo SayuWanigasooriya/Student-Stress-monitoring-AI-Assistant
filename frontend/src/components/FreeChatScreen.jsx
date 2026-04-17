@@ -63,6 +63,14 @@ function createAssistantWelcomeMessage() {
     };
 }
 
+function formatFallbackReason(reason) {
+    if (!reason) return "Fallback";
+    if (reason === "not_configured") return "Fallback: Key Missing";
+    if (reason === "api_error") return "Fallback: API Error";
+    if (reason === "empty_response") return "Fallback: Empty Reply";
+    return "Fallback";
+}
+
 export default function FreeChatScreen() {
     const [sessions, setSessions] = useState([]);
     const [activeSessionId, setActiveSessionId] = useState(null);
@@ -81,6 +89,7 @@ export default function FreeChatScreen() {
     const greeting = useMemo(() => getGreeting(now), [now]);
     const todayFull = useMemo(() => formatFullDate(now), [now]);
     const activeMessages = messagesBySession[activeSessionId] || [];
+    const hasConversation = activeMessages.length > 0;
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 60 * 1000);
@@ -113,6 +122,8 @@ export default function FreeChatScreen() {
                 ),
             ]);
     }, [sessions]);
+
+    const sessionCount = sessions.length;
 
     useEffect(() => {
         loadSessions();
@@ -171,6 +182,10 @@ export default function FreeChatScreen() {
             }));
         } catch (e) {
             setError(getFriendlyMessage(e, "We couldn't load messages for this free chat session."));
+            setMessagesBySession((prev) => ({
+                ...prev,
+                [sessionId]: prev[sessionId]?.length ? prev[sessionId] : [createAssistantWelcomeMessage()],
+            }));
         } finally {
             setIsLoadingMessages(false);
         }
@@ -309,43 +324,28 @@ export default function FreeChatScreen() {
     function getSourceMeta(message) {
         if (message.role !== "assistant") return null;
         if (message.source === "gemini") return { label: "Gemini", className: "free-chat-source is-gemini" };
-        if (message.source === "fallback") return { label: "Fallback", className: "free-chat-source is-fallback" };
+        if (message.source === "gemini_empty") {
+            return { label: "Gemini Empty", className: "free-chat-source is-gemini-empty" };
+        }
+        if (message.source === "fallback") {
+            return { label: formatFallbackReason(message.fallbackReason), className: "free-chat-source is-fallback" };
+        }
         if (message.source === "system") return { label: "System", className: "free-chat-source is-system" };
         return null;
     }
 
     return (
         <section className="free-chat-view">
-            <section className="hero-panel free-chat-hero">
-                <div className="free-chat-hero-copy">
-                    <span className="free-chat-kicker">Free Chat</span>
-                    <h2 className="free-chat-hero-title">A calmer space for open conversation when you just need to talk.</h2>
-                    <p className="free-chat-hero-text">
-                        Use this space for open-ended reflection, small emotional check-ins, or gentle support without starting a guided flow.
-                    </p>
-                </div>
-
-                <div className="hero-stats free-chat-hero-stats">
-                    <div className="hero-stat-card free-chat-stat-card">
-                        <span className="hero-stat-label">Today</span>
-                        <strong>{todayFull}</strong>
-                        <small>{greeting}</small>
-                    </div>
-                    <div className="hero-stat-card free-chat-stat-card free-chat-stat-live">
-                        <span className="hero-stat-label">Mode</span>
-                        <strong>Open Talk</strong>
-                        <small>Gemini and fallback labels appear on each reply</small>
-                    </div>
-                </div>
-            </section>
-
             <section className="free-chat-shell">
             <aside className="free-chat-sidebar">
                 <div className="free-chat-sidebar-top">
                     <div>
-                        <p className="free-chat-brand">Open Talk</p>
-                        <h2>{greeting}</h2>
-                        <p>Browse recent chats or start a fresh conversation.</p>
+                        <div className="free-chat-sidebar-title-row">
+                            <p className="free-chat-brand">Open Talk</p>
+                            <span className="free-chat-history-count">{sessionCount}</span>
+                        </div>
+                        <h2>Recent chats</h2>
+                        <p>Pick up where you left off or start a fresh conversation.</p>
                     </div>
                 </div>
 
@@ -376,51 +376,82 @@ export default function FreeChatScreen() {
             <div className="free-chat-main">
                 <div className="free-chat-panel">
                     <header className="free-chat-header">
-                        <div>
-                            <span className="free-chat-kicker">Conversation</span>
+                        <div className="free-chat-header-copy">
+                            <div className="free-chat-header-topline">
+                                <span className="free-chat-kicker">Free Chat</span>
+                                <span className="free-chat-header-date">{todayFull}</span>
+                            </div>
                             <h2>Talk freely about what is on your mind.</h2>
-                            <p>Quick prompts are here if you want help getting started, but you can type anything in your own words.</p>
+                            <p>Open-ended reflection, small emotional check-ins, and gentle support in a space that feels easier to use.</p>
                         </div>
-                        <div className="free-chat-status">
-                            <span className="free-chat-status-dot" />
-                            Live
+                        <div className="free-chat-header-meta">
+                            <div className="free-chat-header-card">
+                                <span className="free-chat-kicker">Mode</span>
+                                <strong>Open Talk</strong>
+                                <small>Gemini and fallback labels stay visible on replies</small>
+                            </div>
                         </div>
                     </header>
 
-                    <div className="free-chat-quick-actions">
-                        {quickActions.map((action) => (
-                            <button key={action.id} type="button" className="free-chat-chip" onClick={() => sendMessage(action.message)}>
-                                {action.label}
-                            </button>
-                        ))}
+                    <div className="free-chat-context-bar">
+                        <p className="free-chat-context-copy">Choose a quick opener or type in your own words.</p>
+                        <div className="free-chat-quick-actions">
+                            {quickActions.map((action) => (
+                                <button key={action.id} type="button" className="free-chat-chip" onClick={() => sendMessage(action.message)}>
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="free-chat-messages" ref={listRef}>
-                        {isLoadingMessages ? <p className="free-chat-loading">Loading messages...</p> : activeMessages.map((message) => {
-                            const sourceMeta = getSourceMeta(message);
-                            return (
-                                <div
-                                    key={message.id}
-                                    className={`free-chat-row ${message.role === "user" ? "is-user" : "is-assistant"}`}
-                                >
-                                    <div className={`free-chat-bubble ${message.role === "user" ? "is-user" : "is-assistant"}`}>
-                                        <p>{message.content}</p>
-                                        <div className="free-chat-meta">
-                                            {sourceMeta ? <span className={sourceMeta.className}>{sourceMeta.label}</span> : null}
-                                            <span>{formatTime(message.ts)}</span>
+                        <div className="free-chat-thread">
+                            {isLoadingMessages ? <p className="free-chat-loading">Loading messages...</p> : null}
+
+                            {!isLoadingMessages && !hasConversation ? (
+                                <div className="free-chat-empty-state">
+                                    <span className="free-chat-kicker">Start Here</span>
+                                    <h3>This space is ready whenever you are.</h3>
+                                    <p>
+                                        Share what is heavy, confusing, or just on your mind. You can use a quick prompt above or type in your own words below.
+                                    </p>
+                                </div>
+                            ) : null}
+
+                            {!isLoadingMessages && hasConversation ? activeMessages.map((message) => {
+                                const sourceMeta = getSourceMeta(message);
+                                return (
+                                    <div
+                                        key={message.id}
+                                        className={`free-chat-row ${message.role === "user" ? "is-user" : "is-assistant"}`}
+                                    >
+                                        <div className={`free-chat-bubble ${message.role === "user" ? "is-user" : "is-assistant"}`}>
+                                            <div className="free-chat-bubble-head">
+                                                <span className="free-chat-speaker">
+                                                    {message.role === "user" ? "You" : "Support assistant"}
+                                                </span>
+                                                <span className="free-chat-time">{formatTime(message.ts)}</span>
+                                            </div>
+                                            <p>{message.content}</p>
+                                            <div className="free-chat-meta">
+                                                {sourceMeta ? <span className={sourceMeta.className}>{sourceMeta.label}</span> : null}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            }) : null}
 
-                        {isSending ? (
-                            <div className="free-chat-row is-assistant">
-                                <div className="free-chat-bubble is-assistant">
-                                    <p>Thinking...</p>
+                            {isSending ? (
+                                <div className="free-chat-row is-assistant">
+                                    <div className="free-chat-bubble is-assistant">
+                                        <div className="free-chat-bubble-head">
+                                            <span className="free-chat-speaker">Support assistant</span>
+                                        </div>
+                                        <p>Thinking...</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : null}
+                            ) : null}
+                        </div>
                     </div>
 
                     <div className="free-chat-footer">

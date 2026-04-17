@@ -2,6 +2,14 @@ import { styles } from "../styles";
 import { useEffect, useRef } from "react";
 import StatusPanel from "./StatusPanel";
 
+function formatFallbackReason(reason) {
+    if (!reason) return "Source: Fallback";
+    if (reason === "not_configured") return "Source: Fallback: Key Missing";
+    if (reason === "api_error") return "Source: Fallback: API Error";
+    if (reason === "empty_response") return "Source: Fallback: Empty Reply";
+    return "Source: Fallback";
+}
+
 function ChatSection({
     chatMessages,
     chatInput,
@@ -34,10 +42,11 @@ function ChatSection({
                             <div className="chat-source-label">
                                 {msg.source === "gemini"
                                     ? "Source: Gemini"
+                                    : msg.source === "gemini_empty"
+                                        ? "Source: Gemini Empty"
                                     : msg.source === "fallback"
-                                        ? "Source: Fallback"
+                                        ? formatFallbackReason(msg.fallbackReason)
                                         : "Source: System"}
-                                {msg.source === "fallback" && msg.fallbackReason ? ` (${msg.fallbackReason})` : ""}
                             </div>
                         ) : null}
                     </div>
