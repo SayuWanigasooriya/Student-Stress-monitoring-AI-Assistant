@@ -54,7 +54,7 @@ public class MoodEntryController {
             return ResponseEntity.badRequest().body(Map.of("message", "User not found."));
         }
 
-        List<MoodEntryResponse> entries = moodEntryRepository.findByUserIdOrderByDateDesc(userId).stream()
+        List<MoodEntryResponse> entries = moodEntryRepository.findByUser_IdOrderByDateDesc(userId).stream()
                 .map(MoodEntryResponse::from)
                 .toList();
 

@@ -127,7 +127,7 @@ export default function useSupportApp() {
     }, [currentUser]);
 
     const resetAll = useCallback(() => {
-        setActiveView("home");
+        setActiveView("support");
         setSessionId(null);
         setQuestion(null);
         setFinalResult(null);
@@ -146,7 +146,7 @@ export default function useSupportApp() {
         try {
             setBusy(true);
             setError("");
-            setActiveView("home");
+            setActiveView("support");
             setFinalResult(null);
             setShowChat(false);
             setChatInput("");
@@ -270,7 +270,12 @@ export default function useSupportApp() {
             if (!res.ok) throw new Error("We couldn't send your message right now.");
 
             const data = await res.json();
-            setChatMessages((prev) => [...prev, { sender: "bot", message: data.reply }]);
+            setChatMessages((prev) => [...prev, {
+                sender: "bot",
+                message: data.reply,
+                source: data.source || "unknown",
+                fallbackReason: data.fallbackReason || null,
+            }]);
         } catch (e) {
             setError(getFriendlyMessage(e, "We couldn't send your message right now."));
         } finally {

@@ -278,6 +278,7 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
                         <div style={styles.badge}>PROFILE</div>
                         <h2 style={styles.cardTitle}>My Profile</h2>
                         <p className="section-helper">Manage your account details before starting or continuing a support session.</p>
+                        <p className="profile-helper-note">Your profile helps keep your support space personal, familiar, and easier to return to.</p>
                     </div>
                 </div>
 
@@ -301,12 +302,13 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
                     <div className="profile-identity">
                         <div className="profile-name">{user.name}</div>
                         <div className="profile-email">{user.email}</div>
+                        <div className="profile-identity-note">Your details are used to personalize your support space and daily reflections.</div>
                         <div className="profile-avatar-actions">
-                            <button type="button" className="profile-link-button" onClick={() => fileRef.current?.click()}>
+                            <button type="button" className="profile-avatar-button" onClick={() => fileRef.current?.click()}>
                                 Upload photo
                             </button>
                             {photo ? (
-                                <button type="button" className="profile-link-button profile-link-danger" onClick={handleRemovePhoto}>
+                                <button type="button" className="profile-avatar-button profile-avatar-button-danger" onClick={handleRemovePhoto}>
                                     Remove photo
                                 </button>
                             ) : null}
@@ -316,6 +318,7 @@ export default function ProfileScreen({ currentUser, userApiBase, onUserUpdated,
 
                 {!isEditing ? (
                     <>
+                        <div className="profile-section-label">Account details</div>
                         <div className="profile-fields-grid">
                             <Field label="Full Name" value={user.name} />
                             <Field label="Email Address" value={user.email} />

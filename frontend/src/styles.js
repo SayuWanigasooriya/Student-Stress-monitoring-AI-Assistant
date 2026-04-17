@@ -10,15 +10,13 @@ export const styles = {
     },
     container: { maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 1 },
     header: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        gap: 16,
+        display: "grid",
+        gap: 14,
         marginBottom: 24,
     },
     title: { margin: 0, fontSize: 44, letterSpacing: -1, lineHeight: 1.05, color: "#1f3340" },
     subTitle: { margin: "10px 0 0", opacity: 0.82, maxWidth: 620, color: "#526876" },
-    userBox: { display: "flex", gap: 10, alignItems: "center" },
+    userBox: { display: "flex", gap: 12, alignItems: "center" },
 
     card: {
         background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,252,251,0.92))",
@@ -102,8 +100,8 @@ export const styles = {
         transition: "transform 160ms ease, border-color 160ms ease, background 160ms ease",
     },
     navBtn: {
-        minWidth: 124,
-        minHeight: 48,
+        minWidth: 108,
+        minHeight: 44,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

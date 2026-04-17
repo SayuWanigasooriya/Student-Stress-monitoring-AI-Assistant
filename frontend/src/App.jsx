@@ -1,12 +1,12 @@
 import "./App.css";
 import AuthScreen from "./components/AuthScreen";
 import DailyCheckInScreen from "./components/DailyCheckInScreen";
+import GuidedSupportScreen from "./components/GuidedSupportScreen";
 import Header from "./components/Header";
+import HomeDashboardScreen from "./components/HomeDashboardScreen";
 import ProfileScreen from "./components/ProfileScreen";
-import QuestionCard from "./components/QuestionCard";
-import ResultCard from "./components/ResultCard";
+import RecommendationsDashboardScreen from "./components/RecommendationsDashboardScreen";
 import StatusPanel from "./components/StatusPanel";
-import TopicListCard from "./components/TopicListCard";
 import useSupportApp from "./hooks/useSupportApp";
 import { styles } from "./styles";
 import { API_BASE } from "./utils/appHelpers";
@@ -52,7 +52,9 @@ export default function App() {
 
     const isProfileView = Boolean(currentUser) && activeView === "profile";
     const isCheckInView = Boolean(currentUser) && activeView === "checkin";
-    const isHomeScreen = !question && !finalResult && !isProfileView && !isCheckInView;
+    const isRecommendationsView = Boolean(currentUser) && activeView === "recommendations";
+    const isSupportView = Boolean(currentUser) && activeView === "support";
+    const isHomeScreen = Boolean(currentUser) && activeView === "home";
 
     return (
         <div style={styles.page} className="app-shell">
@@ -73,7 +75,9 @@ export default function App() {
                             currentUser={currentUser}
                             onOpenProfile={() => setActiveView("profile")}
                             onOpenHome={() => setActiveView("home")}
+                            onOpenSupport={() => setActiveView("support")}
                             onOpenCheckIn={() => setActiveView("checkin")}
+                            onOpenRecommendations={() => setActiveView("recommendations")}
                             onLogout={handleLogout}
                             busy={busy}
                             activeView={activeView}
@@ -97,38 +101,20 @@ export default function App() {
                             />
                         ) : null}
 
-                        {isCheckInView ? <DailyCheckInScreen currentUser={currentUser} /> : null}
-
                         {isHomeScreen && (
-                            <section className="hero-panel">
-                                <div>
-                                    <p className="eyebrow">Support Space</p>
-                                    <h2 className="hero-title">Start with one area, move step by step, and take support at your own pace.</h2>
-                                    <p className="hero-copy">
-                                        Choose the area you want support with and move through the conversation at your own pace.
-                                    </p>
-                                </div>
-
-                                <div className="hero-stats">
-                                    <div className="hero-stat-card">
-                                        <span className="hero-stat-label">Topics</span>
-                                        <strong>{topics.length}</strong>
-                                    </div>
-                                    <div className="hero-stat-card">
-                                        <span className="hero-stat-label">Signed In As</span>
-                                        <strong>{currentUser.name || userId || "Account connected"}</strong>
-                                    </div>
-                                    <div className="hero-stat-card">
-                                        <span className="hero-stat-label">What You Get</span>
-                                        <strong>Guided steps and follow-up chat</strong>
-                                    </div>
-                                </div>
-                            </section>
+                            <HomeDashboardScreen
+                                currentUser={currentUser}
+                                topics={topics}
+                                onOpenSupport={() => setActiveView("support")}
+                                onOpenCheckIn={() => setActiveView("checkin")}
+                                onOpenRecommendations={() => setActiveView("recommendations")}
+                            />
                         )}
 
-                        {question && !isProfileView && (
-                            <QuestionCard
+                        {isSupportView ? (
+                            <GuidedSupportScreen
                                 question={question}
+                                finalResult={finalResult}
                                 totalStepsForCurrentTopic={totalStepsForCurrentTopic}
                                 progressPct={progressPct}
                                 parsedOptions={parsedOptions}
@@ -140,26 +126,13 @@ export default function App() {
                                 setScaleAnswer={setScaleAnswer}
                                 submitAnswer={submitAnswer}
                                 resetAll={resetAll}
-                                busy={busy}
-                            />
-                        )}
-
-                        {finalResult && !isProfileView && (
-                            <ResultCard
-                                finalResult={finalResult}
-                                showChat={showChat}
-                                openChat={openChat}
-                                resetAll={resetAll}
                                 chatMessages={chatMessages}
                                 chatInput={chatInput}
                                 setChatInput={setChatInput}
                                 sendChatMessage={sendChatMessage}
                                 chatSending={chatSending}
-                            />
-                        )}
-
-                        {isHomeScreen && (
-                            <TopicListCard
+                                showChat={showChat}
+                                openChat={openChat}
                                 loadingTopics={loadingTopics}
                                 topics={topics}
                                 startSession={startSession}
@@ -167,7 +140,11 @@ export default function App() {
                                 userId={userId}
                                 onRetry={loadTopics}
                             />
-                        )}
+                        ) : null}
+
+                        {isCheckInView ? <DailyCheckInScreen currentUser={currentUser} /> : null}
+
+                        {isRecommendationsView ? <RecommendationsDashboardScreen currentUser={currentUser} /> : null}
                     </>
                 )}
             </div>

@@ -1,5 +1,7 @@
 package com.sliit.tg.controller;
 
+import com.sliit.tg.dto.ChatReplyResponse;
+import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.service.ChatService;
@@ -40,15 +42,15 @@ public class ChatController {
     }
 
     @PostMapping("/message")
-    public Map<String, String> sendMessage(@RequestBody Map<String, Object> body) {
+    public ChatReplyResponse sendMessage(@RequestBody Map<String, Object> body) {
         Long sessionId = Long.valueOf(body.get("sessionId").toString());
         String message = body.get("message").toString();
 
         @SuppressWarnings("unchecked")
         Map<String, Object> summary = (Map<String, Object>) body.get("summary");
 
-        String reply = chatService.sendMessage(sessionId, message, summary);
+        GeminiReply reply = chatService.sendMessage(sessionId, message, summary);
 
-        return Map.of("reply", reply);
+        return new ChatReplyResponse(reply.text(), reply.source(), reply.fallbackReason());
     }
 }

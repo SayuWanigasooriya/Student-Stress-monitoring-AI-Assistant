@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import com.sliit.tg.dto.EmotionResponse;
+import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.MoodEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +17,7 @@ import java.util.Map;
 
 @Service
 public class GeminiService {
+    private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
 
     private final Client client;
     private final String modelName;
@@ -33,8 +37,8 @@ public class GeminiService {
         try {
             builtClient = Client.builder().build();
             clientEnabled = true;
-        } catch (Exception ignored) {
-            // Allow the application to start without Gemini credentials.
+        } catch (Exception e) {
+            logger.warn("Gemini client initialization failed. Falling back to non-Gemini responses.", e);
         }
 
         this.client = builtClient;
@@ -107,11 +111,11 @@ Rules:
         }
     }
 
-    public String getReply(String topicCode,
-                           List<ChatMessage> history,
-                           String userMessage,
-                           Map<String, Object> summary,
-                           EmotionResponse emotionResult) {
+    public GeminiReply getReply(String topicCode,
+                                List<ChatMessage> history,
+                                String userMessage,
+                                Map<String, Object> summary,
+                                EmotionResponse emotionResult) {
         // The prompt blends three things: topic context, completed assessment context, and live emotion context.
         StringBuilder prompt = new StringBuilder();
 
@@ -232,7 +236,9 @@ Emotion-specific priority:
         prompt.append("bot:");
 
         if (!enabled || client == null) {
-            return buildFallbackReply(normalizedEmotion, topicCode);
+            logger.warn("Gemini fallback used because the client is not configured. model={}, apiKeyPresent={}",
+                    modelName, apiKey != null && !apiKey.isBlank());
+            return new GeminiReply(buildFallbackReply(normalizedEmotion, topicCode), "fallback", "not_configured");
         }
 
         GenerateContentResponse response;
@@ -242,12 +248,16 @@ Emotion-specific priority:
                     prompt.toString(),
                     null
             );
-        } catch (Exception ignored) {
-            return buildFallbackReply(normalizedEmotion, topicCode);
+        } catch (Exception e) {
+            logger.error("Gemini chat request failed. model={}, emotion={}, topicCode={}, message={}",
+                    modelName, normalizedEmotion, topicCode, userMessage, e);
+            return new GeminiReply(buildFallbackReply(normalizedEmotion, topicCode), "fallback", "api_error");
         }
 
         if (response.text() == null || response.text().isBlank()) {
-            return "I'm here to help. Could you tell me a bit more?";
+            logger.warn("Gemini returned an empty chat response. model={}, emotion={}, topicCode={}",
+                    modelName, normalizedEmotion, topicCode);
+            return new GeminiReply("I'm here to help. Could you tell me a bit more?", "gemini", null);
         }
 
         String reply = response.text();
@@ -257,7 +267,7 @@ Emotion-specific priority:
                 .replace("*", "")
                 .trim();
 
-        return reply;
+        return new GeminiReply(reply, "gemini", null);
     }
 
     private String buildFallbackReply(String normalizedEmotion, String topicCode) {

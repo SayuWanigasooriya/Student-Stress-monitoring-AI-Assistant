@@ -35,6 +35,19 @@ function formatEntryDate(value) {
     }).format(date);
 }
 
+function formatShortDay(value, index) {
+    if (!value) return `Day ${index + 1}`;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return `Day ${index + 1}`;
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+}
+
+function getStressLevelLabel(value) {
+    if (value >= 4) return "High";
+    if (value >= 3) return "Moderate";
+    return "Low";
+}
+
 function getToneSummary(mood, entries) {
     if (!entries.length) {
         return "Start with one honest check-in and let the pattern build from there.";
@@ -59,17 +72,6 @@ function getRecentEntries(entries, limit = 7) {
     return [...entries].slice(0, limit).reverse();
 }
 
-function createLinePoints(values, width, height) {
-    if (!values.length) return "";
-
-    const xStep = values.length > 1 ? width / (values.length - 1) : width / 2;
-    return values.map((value, index) => {
-        const x = values.length > 1 ? index * xStep : width / 2;
-        const y = height - ((value - 1) / 4) * height;
-        return `${x},${y}`;
-    }).join(" ");
-}
-
 function summarizeMoodFrequency(entries) {
     return moodOptions
         .map((option) => ({
@@ -80,37 +82,57 @@ function summarizeMoodFrequency(entries) {
         .sort((left, right) => right.count - left.count);
 }
 
-function SparklineCard({ title, detail, values, accent }) {
-    const width = 240;
-    const height = 72;
-    const points = createLinePoints(values, width, height);
+function StressHistoryCard({ entries }) {
+    const values = entries.map((entry) => Number(entry.stressLevel || 0));
+    const averageStress = averageFrom(entries, "stressLevel");
+    const latestStress = values[values.length - 1] || 0;
 
     return (
         <article className="trend-card">
             <div className="trend-card-head">
                 <div>
-                    <span className="checkin-kicker">{title}</span>
-                    <h4>{detail}</h4>
+                    <span className="checkin-kicker">Stress Trend</span>
+                    <h4>Stress across your last few check-ins</h4>
                 </div>
-                <strong>{values.length ? `${values[values.length - 1]}/5` : "--"}</strong>
+                <strong>{latestStress ? `Latest ${latestStress}/5` : "--"}</strong>
             </div>
 
             {values.length ? (
-                <svg viewBox={`0 0 ${width} ${height}`} className="trend-sparkline" role="img" aria-label={`${title} trend`}>
-                    <polyline
-                        fill="none"
-                        stroke={accent}
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        points={points}
-                    />
-                    {values.map((value, index) => {
-                        const pointList = points.split(" ");
-                        const [cx, cy] = pointList[index].split(",");
-                        return <circle key={`${title}-${index}`} cx={cx} cy={cy} r="4.5" fill={accent} />;
-                    })}
-                </svg>
+                <>
+                    <div className="trend-bar-grid" role="img" aria-label="Stress levels across recent check-ins">
+                        <div className="trend-bar-axis">
+                            <span>High</span>
+                            <span>Mid</span>
+                            <span>Low</span>
+                        </div>
+                        <div
+                            className="trend-bar-columns"
+                            style={{ gridTemplateColumns: `repeat(${entries.length}, minmax(0, 1fr))` }}
+                        >
+                            {entries.map((entry, index) => {
+                                const value = Number(entry.stressLevel || 0);
+                                return (
+                                    <div key={entry.id ?? index} className="trend-bar-column">
+                                        <span className="trend-bar-value">{value}/5</span>
+                                        <div className="trend-bar-track">
+                                            <span
+                                                className="trend-bar-fill"
+                                                style={{ height: `${(value / 5) * 100}%` }}
+                                            />
+                                        </div>
+                                        <span className="trend-bar-label">{formatShortDay(entry.date, index)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="trend-summary-row">
+                        <span className="trend-summary-chip">Average {averageStress}/5</span>
+                        <span className="trend-summary-chip">Latest {getStressLevelLabel(latestStress)}</span>
+                        <span className="trend-summary-chip">{entries.length} check-ins</span>
+                    </div>
+                </>
             ) : (
                 <div className="trend-chart-empty">No data yet</div>
             )}
@@ -134,7 +156,7 @@ function MetricBand({ title, average, latest, accent }) {
 }
 
 function WeeklyTrendPanel({ entries, loading, error, onRetry }) {
-    const recentEntries = useMemo(() => getRecentEntries(entries), [entries]);
+    const recentEntries = useMemo(() => getRecentEntries(entries, 5), [entries]);
     const moodFrequency = useMemo(() => summarizeMoodFrequency(recentEntries), [recentEntries]);
     const stressValues = useMemo(() => recentEntries.map((entry) => Number(entry.stressLevel || 0)), [recentEntries]);
     const energyValues = useMemo(() => recentEntries.map((entry) => Number(entry.energyLevel || 0)), [recentEntries]);
@@ -171,17 +193,12 @@ function WeeklyTrendPanel({ entries, loading, error, onRetry }) {
                 />
             ) : (
                 <div className="trend-grid">
-                    <SparklineCard
-                        title="Stress Trend"
-                        detail="How pressure has shifted across recent check-ins"
-                        values={stressValues}
-                        accent="#d29c5e"
-                    />
+                    <StressHistoryCard entries={recentEntries} />
                     <div className="trend-card trend-stack-card">
                         <div className="trend-card-head">
                             <div>
                                 <span className="checkin-kicker">Energy + Sleep</span>
-                                <h4>Your recovery signals at a glance</h4>
+                                <h4>Recovery signals at a glance</h4>
                             </div>
                         </div>
                         <div className="metric-band-grid">
@@ -199,8 +216,8 @@ function WeeklyTrendPanel({ entries, loading, error, onRetry }) {
                             />
                         </div>
                         <div className="trend-inline-metrics">
-                            <span>Energy {energyValues[energyValues.length - 1] || "--"}/5</span>
-                            <span>Sleep {sleepValues[sleepValues.length - 1] || "--"}/5</span>
+                            <span>Energy now {energyValues[energyValues.length - 1] || "--"}/5</span>
+                            <span>Sleep now {sleepValues[sleepValues.length - 1] || "--"}/5</span>
                         </div>
                     </div>
 
@@ -502,7 +519,7 @@ export default function DailyCheckInScreen({ currentUser }) {
                                                 <span>{formatEntryDate(entry.date)}</span>
                                             </div>
                                             <div className="entry-rating-pill">
-                                                {entry.stressLevel}/{entry.energyLevel}/{entry.sleepQuality}
+                                                S {entry.stressLevel} / E {entry.energyLevel} / Sl {entry.sleepQuality}
                                             </div>
                                         </div>
                                         <div className="entry-measure-row">

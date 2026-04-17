@@ -29,5 +29,5 @@ export function getAnswerValue(question, answers) {
 }
 
 export function createSupportIntroMessage() {
-    return { sender: "bot", message: "I'm here with you. We can keep working through this together." };
+    return { sender: "bot", message: "I'm here with you. We can keep working through this together.", source: "system" };
 }

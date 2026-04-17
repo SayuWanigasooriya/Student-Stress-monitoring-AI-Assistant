@@ -41,7 +41,7 @@ public class AIInsightsController {
             return ResponseEntity.badRequest().body(Map.of("message", "User not found."));
         }
 
-        List<MoodEntry> entries = moodEntryRepository.findByUserIdOrderByDateDesc(userId);
+        List<MoodEntry> entries = moodEntryRepository.findByUser_IdOrderByDateDesc(userId);
         if (entries.isEmpty()) {
             return ResponseEntity.ok(buildEmptyState());
         }

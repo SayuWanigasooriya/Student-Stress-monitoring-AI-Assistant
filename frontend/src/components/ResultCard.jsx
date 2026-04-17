@@ -30,6 +30,16 @@ function ChatSection({
                         className={msg.sender === "user" ? "chat-bubble-user" : "chat-bubble-bot"}
                     >
                         {msg.message}
+                        {msg.sender === "bot" && msg.source ? (
+                            <div className="chat-source-label">
+                                {msg.source === "gemini"
+                                    ? "Source: Gemini"
+                                    : msg.source === "fallback"
+                                        ? "Source: Fallback"
+                                        : "Source: System"}
+                                {msg.source === "fallback" && msg.fallbackReason ? ` (${msg.fallbackReason})` : ""}
+                            </div>
+                        ) : null}
                     </div>
                 ))}
                 {chatSending && (
@@ -89,7 +99,7 @@ export default function ResultCard({
                         Open Support Chat
                     </button>
                     <button style={styles.btnGhost} className="ghost-button" onClick={resetAll}>
-                        Start Another Check-In
+                        Choose Another Topic
                     </button>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 package com.sliit.tg.service;
 
 import com.sliit.tg.dto.EmotionResponse;
+import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.repo.ChatMessageRepository;
@@ -37,7 +38,7 @@ public class ChatService {
         return chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
     }
 
-    public String sendMessage(Long sessionId, String message, Map<String, Object> summary) {
+    public GeminiReply sendMessage(Long sessionId, String message, Map<String, Object> summary) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Chat session not found"));
 
@@ -51,7 +52,7 @@ public class ChatService {
         // The chat reply is shaped by both the detected emotion and the structured guidance summary.
         EmotionResponse emotionResult = emotionService.detectEmotion(message);
 
-        String reply = geminiService.getReply(
+        GeminiReply reply = geminiService.getReply(
                 session.getTopicCode(),
                 history,
                 message,
@@ -59,7 +60,7 @@ public class ChatService {
                 emotionResult
         );
 
-        ChatMessage botMessage = new ChatMessage(session, "bot", reply);
+        ChatMessage botMessage = new ChatMessage(session, "bot", reply.text());
         chatMessageRepository.save(botMessage);
 
         return reply;

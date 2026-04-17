@@ -46,7 +46,7 @@ class AIInsightsControllerTest {
     @Test
     void getAiInsightsReturnsEmptyStateWhenNoEntriesExist() {
         when(userRepository.existsById(1L)).thenReturn(true);
-        when(moodEntryRepository.findByUserIdOrderByDateDesc(1L)).thenReturn(List.of());
+        when(moodEntryRepository.findByUser_IdOrderByDateDesc(1L)).thenReturn(List.of());
 
         ResponseEntity<?> response = aiInsightsController.getAIInsights(1L);
 
@@ -59,7 +59,7 @@ class AIInsightsControllerTest {
     @Test
     void getAiInsightsFallsBackWhenGeminiGenerationFails() {
         when(userRepository.existsById(1L)).thenReturn(true);
-        when(moodEntryRepository.findByUserIdOrderByDateDesc(1L)).thenReturn(List.of(
+        when(moodEntryRepository.findByUser_IdOrderByDateDesc(1L)).thenReturn(List.of(
                 moodEntry("Stressed", 4, 2, 2, LocalDateTime.now()),
                 moodEntry("Okay", 4, 3, 3, LocalDateTime.now().minusDays(1))
         ));
@@ -86,7 +86,7 @@ class AIInsightsControllerTest {
         );
 
         when(userRepository.existsById(1L)).thenReturn(true);
-        when(moodEntryRepository.findByUserIdOrderByDateDesc(1L)).thenReturn(List.of(
+        when(moodEntryRepository.findByUser_IdOrderByDateDesc(1L)).thenReturn(List.of(
                 moodEntry("Calm", 2, 4, 4, LocalDateTime.now())
         ));
         when(geminiService.generateMoodInsights(org.mockito.ArgumentMatchers.anyList())).thenReturn(aiPayload);
