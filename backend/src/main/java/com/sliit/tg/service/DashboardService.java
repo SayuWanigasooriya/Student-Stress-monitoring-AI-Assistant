@@ -2,6 +2,7 @@ package com.sliit.tg.service;
 
 import com.sliit.tg.dto.DashboardResponse;
 import com.sliit.tg.dto.MoodEntryResponse;
+import com.sliit.tg.dto.RecommendationBundle;
 import com.sliit.tg.dto.RecommendationResponse;
 import com.sliit.tg.model.MoodEntry;
 import com.sliit.tg.model.RecommendationStatus;
@@ -52,7 +53,8 @@ public class DashboardService {
 
         long doneCount = recommendationLogRepository.countByUser_IdAndStatus(userId, RecommendationStatus.DONE);
         long savedCount = recommendationLogRepository.countByUser_IdAndStatus(userId, RecommendationStatus.SAVED);
-        List<RecommendationResponse> recommendations = recommendationService.getRecommendations(userId);
+        RecommendationBundle recommendationBundle = recommendationService.getRecommendationBundle(userId);
+        List<RecommendationResponse> recommendations = recommendationBundle.recommendations();
 
         return new DashboardResponse(
                 roundToOneDecimal(wellbeingScore),
@@ -61,6 +63,7 @@ public class DashboardService {
                 roundToOneDecimal(avgSleep),
                 doneCount,
                 savedCount,
+                recommendationBundle.source(),
                 recentMoods,
                 recommendations
         );

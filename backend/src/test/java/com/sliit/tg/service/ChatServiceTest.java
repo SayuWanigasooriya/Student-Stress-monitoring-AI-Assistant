@@ -1,6 +1,7 @@
 package com.sliit.tg.service;
 
 import com.sliit.tg.dto.EmotionResponse;
+import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.repo.ChatMessageRepository;
@@ -62,11 +63,11 @@ class ChatServiceTest {
         when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(1L)).thenReturn(history);
         when(emotionService.detectEmotion("I feel overwhelmed")).thenReturn(emotion);
         when(geminiService.getReply("ANXIETY", history, "I feel overwhelmed", Map.of("summary", "demo"), emotion))
-                .thenReturn("Let's slow this down together.");
+                .thenReturn(new GeminiReply("Let's slow this down together.", "gemini", null));
 
-        String reply = chatService.sendMessage(1L, "I feel overwhelmed", Map.of("summary", "demo"));
+        GeminiReply reply = chatService.sendMessage(1L, "I feel overwhelmed", Map.of("summary", "demo"));
 
-        assertThat(reply).isEqualTo("Let's slow this down together.");
+        assertThat(reply.text()).isEqualTo("Let's slow this down together.");
 
         ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
         verify(chatMessageRepository, times(2)).save(messageCaptor.capture());

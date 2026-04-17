@@ -9,6 +9,7 @@ public record DashboardResponse(
         double avgSleep,
         long doneCount,
         long savedCount,
+        String recommendationSource,
         List<MoodEntryResponse> recentMoods,
         List<RecommendationResponse> recommendations
 ) {

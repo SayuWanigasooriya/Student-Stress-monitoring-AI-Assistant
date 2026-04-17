@@ -1,5 +1,7 @@
 package com.sliit.tg.service;
 
+import com.sliit.tg.dto.AiRecommendationResult;
+import com.sliit.tg.dto.RecommendationBundle;
 import com.sliit.tg.dto.RecommendationResponse;
 import com.sliit.tg.model.*;
 import com.sliit.tg.repo.MoodEntryRepository;
@@ -10,52 +12,64 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class RecommendationService {
+    private static final Pattern WORD_PATTERN = Pattern.compile("[a-zA-Z']+");
 
     private final UserRepository userRepository;
     private final MoodEntryRepository moodEntryRepository;
     private final RecommendationRepository recommendationRepository;
     private final RecommendationLogRepository recommendationLogRepository;
+    private final AiRecommendationService aiRecommendationService;
 
     public RecommendationService(
             UserRepository userRepository,
             MoodEntryRepository moodEntryRepository,
             RecommendationRepository recommendationRepository,
-            RecommendationLogRepository recommendationLogRepository
+            RecommendationLogRepository recommendationLogRepository,
+            AiRecommendationService aiRecommendationService
     ) {
         this.userRepository = userRepository;
         this.moodEntryRepository = moodEntryRepository;
         this.recommendationRepository = recommendationRepository;
         this.recommendationLogRepository = recommendationLogRepository;
+        this.aiRecommendationService = aiRecommendationService;
     }
 
     public List<RecommendationResponse> getRecommendations(Long userId) {
+        return getRecommendationBundle(userId).recommendations();
+    }
+
+    public RecommendationBundle getRecommendationBundle(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "User not found."));
 
         List<MoodEntry> entries = moodEntryRepository.findByUser_IdOrderByDateDesc(userId);
         MoodEntry latestEntry = entries.isEmpty() ? null : entries.get(0);
-
-        return recommendationRepository.findByActiveTrue().stream()
+        List<Recommendation> matchedRecommendations = recommendationRepository.findByActiveTrue().stream()
                 .filter(recommendation -> matchesRecommendation(recommendation, latestEntry))
                 .sorted(Comparator.comparing(Recommendation::getId))
-                .limit(6)
-                .map(recommendation -> RecommendationResponse.from(
-                        recommendation,
-                        recommendationLogRepository.existsByUser_IdAndRecommendation_IdAndStatus(
-                                userId, recommendation.getId(), RecommendationStatus.SAVED
-                        ),
-                        recommendationLogRepository.existsByUser_IdAndRecommendation_IdAndStatus(
-                                userId, recommendation.getId(), RecommendationStatus.DONE
-                        )
-                ))
                 .toList();
+
+        return aiRecommendationService.generateRecommendations(entries)
+                .map(aiResult -> new RecommendationBundle(
+                        buildAiBackedRecommendations(userId, matchedRecommendations, aiResult),
+                        "gemini".equalsIgnoreCase(aiResult.generation_source()) ? "gemini" : "fallback"
+                ))
+                .filter(bundle -> !bundle.recommendations().isEmpty())
+                .orElseGet(() -> new RecommendationBundle(
+                        buildRuleBasedRecommendations(userId, matchedRecommendations),
+                        "fallback"
+                ));
     }
 
     public void markDone(Long recommendationId, Long userId, String feedback) {
@@ -129,5 +143,150 @@ public class RecommendationService {
             return false;
         }
         return true;
+    }
+
+    private List<RecommendationResponse> buildAiBackedRecommendations(
+            Long userId,
+            List<Recommendation> matchedRecommendations,
+            AiRecommendationResult aiResult
+    ) {
+        if (matchedRecommendations.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> aiSuggestions = aiResult.dashboard_suggestions() == null ? List.of() : aiResult.dashboard_suggestions();
+        List<RecommendationResponse> personalized = new java.util.ArrayList<>();
+        Set<Long> usedIds = new HashSet<>();
+
+        for (String suggestion : aiSuggestions) {
+            Recommendation match = findBestMatch(suggestion, matchedRecommendations, usedIds);
+            if (match == null) {
+                continue;
+            }
+
+            usedIds.add(match.getId());
+            personalized.add(toResponse(userId, match, suggestion));
+        }
+
+        for (Recommendation recommendation : matchedRecommendations) {
+            if (usedIds.contains(recommendation.getId())) {
+                continue;
+            }
+            personalized.add(toResponse(userId, recommendation, recommendation.getDescription()));
+        }
+
+        if (!personalized.isEmpty() && aiResult.ai_message() != null && !aiResult.ai_message().isBlank()) {
+            RecommendationResponse top = personalized.get(0);
+            personalized.set(0, new RecommendationResponse(
+                    top.id(),
+                    top.title(),
+                    top.type(),
+                    mergeDescription(top.description(), aiResult.ai_message()),
+                    top.saved(),
+                    top.done()
+            ));
+        }
+
+        return personalized.stream().limit(6).toList();
+    }
+
+    private Recommendation findBestMatch(String suggestion, List<Recommendation> candidates, Set<Long> usedIds) {
+        Recommendation bestRecommendation = null;
+        int bestScore = 0;
+
+        for (Recommendation candidate : candidates) {
+            if (usedIds.contains(candidate.getId())) {
+                continue;
+            }
+
+            int score = similarityScore(suggestion, candidate);
+            if (score > bestScore) {
+                bestScore = score;
+                bestRecommendation = candidate;
+            }
+        }
+
+        return bestScore > 0 ? bestRecommendation : null;
+    }
+
+    private int similarityScore(String suggestion, Recommendation candidate) {
+        Set<String> suggestionTokens = tokenize(suggestion);
+        if (suggestionTokens.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> candidateTokens = tokenize(
+                candidate.getTitle() + " " + candidate.getDescription() + " " + candidate.getType().name()
+        );
+
+        int overlap = 0;
+        for (String token : suggestionTokens) {
+            if (candidateTokens.contains(token)) {
+                overlap++;
+            }
+        }
+
+        String normalizedSuggestion = suggestion == null ? "" : suggestion.toLowerCase(Locale.ROOT);
+        String candidateType = candidate.getType().name().toLowerCase(Locale.ROOT);
+        if (normalizedSuggestion.contains("breath") && candidateType.contains("breathing")) {
+            overlap += 3;
+        }
+        if (normalizedSuggestion.contains("journal") && candidateType.contains("reflection")) {
+            overlap += 3;
+        }
+        if (normalizedSuggestion.contains("friend") && candidateType.contains("connection")) {
+            overlap += 3;
+        }
+        if (normalizedSuggestion.contains("rest") && candidateType.contains("recovery")) {
+            overlap += 3;
+        }
+
+        return overlap;
+    }
+
+    private Set<String> tokenize(String value) {
+        Set<String> tokens = new HashSet<>();
+        if (value == null || value.isBlank()) {
+            return tokens;
+        }
+
+        Matcher matcher = WORD_PATTERN.matcher(value.toLowerCase(Locale.ROOT));
+        while (matcher.find()) {
+            String token = matcher.group();
+            if (token.length() > 2) {
+                tokens.add(token);
+            }
+        }
+        return tokens;
+    }
+
+    private String mergeDescription(String baseDescription, String aiMessage) {
+        String condensed = aiMessage.strip().replaceAll("\\s+", " ");
+        if (condensed.length() > 220) {
+            condensed = condensed.substring(0, 217).strip() + "...";
+        }
+        return baseDescription + " Why this fits now: " + condensed;
+    }
+
+    private List<RecommendationResponse> buildRuleBasedRecommendations(Long userId, List<Recommendation> matchedRecommendations) {
+        return matchedRecommendations.stream()
+                .limit(6)
+                .map(recommendation -> toResponse(userId, recommendation, recommendation.getDescription()))
+                .toList();
+    }
+
+    private RecommendationResponse toResponse(Long userId, Recommendation recommendation, String description) {
+        return new RecommendationResponse(
+                recommendation.getId(),
+                recommendation.getTitle(),
+                recommendation.getType(),
+                description,
+                recommendationLogRepository.existsByUser_IdAndRecommendation_IdAndStatus(
+                        userId, recommendation.getId(), RecommendationStatus.SAVED
+                ),
+                recommendationLogRepository.existsByUser_IdAndRecommendation_IdAndStatus(
+                        userId, recommendation.getId(), RecommendationStatus.DONE
+                )
+        );
     }
 }

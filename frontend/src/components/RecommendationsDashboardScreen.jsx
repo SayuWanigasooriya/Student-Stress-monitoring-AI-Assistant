@@ -107,6 +107,22 @@ function getRecommendationTypeLabel(type) {
     return type || "Support";
 }
 
+function getRecommendationModeMeta(source) {
+    if (String(source || "").toLowerCase() === "gemini") {
+        return {
+            label: "Gemini Live",
+            detail: "AI-generated and RAG-informed guidance is active.",
+            className: "recommendation-source-badge is-gemini",
+        };
+    }
+
+    return {
+        label: "Fallback Active",
+        detail: "The app is using local support guidance while live Gemini is unavailable.",
+        className: "recommendation-source-badge is-fallback",
+    };
+}
+
 function RecommendationCard({ item, onSave, onDone, pendingId }) {
     const isPending = pendingId === item.id;
 
@@ -228,6 +244,7 @@ export default function RecommendationsDashboardScreen({ currentUser }) {
 
     const latestEntries = dashboard?.recentMoods || [];
     const recommendations = dashboard?.recommendations || [];
+    const recommendationMode = getRecommendationModeMeta(dashboard?.recommendationSource);
     const primaryRecommendation = recommendations[0] || null;
     const secondaryRecommendations = recommendations.slice(1);
 
@@ -235,11 +252,15 @@ export default function RecommendationsDashboardScreen({ currentUser }) {
         <section className="recommendations-shell">
             <section className="hero-panel recommendations-hero">
                 <div className="recommendations-hero-copy">
-                    <span style={styles.badge}>Recommendations</span>
+                    <div className="recommendations-hero-badges">
+                        <span style={styles.badge}>Recommendations</span>
+                        <span className={recommendationMode.className}>{recommendationMode.label}</span>
+                    </div>
                     <h2 className="recommendations-hero-title">Turn your recent patterns into one clearer next step.</h2>
                     <p className="recommendations-hero-text">
                         This dashboard reads your latest check-ins, spots the clearest support signal, and keeps the most useful actions close at hand.
                     </p>
+                    <p className="recommendation-mode-detail">{recommendationMode.detail}</p>
                 </div>
 
                 <div className="hero-stats recommendations-hero-stats">

@@ -986,6 +986,35 @@ textarea:focus-visible {
   max-width: 52ch;
 }
 
+.recommendations-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.recommendation-source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.38rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(98, 124, 134, 0.18);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommendation-source-badge.is-gemini {
+  color: #146149;
+  background: rgba(205, 241, 226, 0.88);
+}
+
+.recommendation-source-badge.is-fallback {
+  color: #8c5d17;
+  background: rgba(252, 238, 203, 0.92);
+}
+
 .recommendations-hero-title {
   margin: 0.55rem 0 0;
   max-width: 12ch;
@@ -998,6 +1027,12 @@ textarea:focus-visible {
   margin: 0.75rem 0 0;
   color: #607984;
   line-height: 1.58;
+}
+
+.recommendation-mode-detail {
+  margin: 0.7rem 0 0;
+  color: #58707b;
+  line-height: 1.5;
 }
 
 .recommendations-hero-stats {
