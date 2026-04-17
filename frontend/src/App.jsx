@@ -1,6 +1,7 @@
 import "./App.css";
 import AuthScreen from "./components/AuthScreen";
 import DailyCheckInScreen from "./components/DailyCheckInScreen";
+import FreeChatScreen from "./components/FreeChatScreen";
 import GuidedSupportScreen from "./components/GuidedSupportScreen";
 import Header from "./components/Header";
 import HomeDashboardScreen from "./components/HomeDashboardScreen";
@@ -55,6 +56,7 @@ export default function App() {
     const isRecommendationsView = Boolean(currentUser) && activeView === "recommendations";
     const isSupportView = Boolean(currentUser) && activeView === "support";
     const isHomeScreen = Boolean(currentUser) && activeView === "home";
+    const isFreeChatView = Boolean(currentUser) && activeView === "freechat";
 
     return (
         <div style={styles.page} className="app-shell">
@@ -78,6 +80,7 @@ export default function App() {
                             onOpenSupport={() => setActiveView("support")}
                             onOpenCheckIn={() => setActiveView("checkin")}
                             onOpenRecommendations={() => setActiveView("recommendations")}
+                            onOpenFreeChat={() => setActiveView("freechat")}
                             onLogout={handleLogout}
                             busy={busy}
                             activeView={activeView}
@@ -145,6 +148,8 @@ export default function App() {
                         {isCheckInView ? <DailyCheckInScreen currentUser={currentUser} /> : null}
 
                         {isRecommendationsView ? <RecommendationsDashboardScreen currentUser={currentUser} /> : null}
+
+                        {isFreeChatView ? <FreeChatScreen /> : null}
                     </>
                 )}
             </div>

@@ -1,6 +1,7 @@
 package com.sliit.tg.controller;
 
 import com.sliit.tg.dto.ChatReplyResponse;
+import com.sliit.tg.dto.ChatSessionSummaryResponse;
 import com.sliit.tg.dto.GeminiReply;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
@@ -19,6 +20,11 @@ public class ChatController {
 
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
+    }
+
+    @GetMapping("/sessions")
+    public List<ChatSessionSummaryResponse> getSessions() {
+        return chatService.getSessionSummaries();
     }
 
     @PostMapping("/session")

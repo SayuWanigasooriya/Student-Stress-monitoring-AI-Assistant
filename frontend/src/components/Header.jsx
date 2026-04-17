@@ -1,11 +1,12 @@
 import { styles } from "../styles";
 
-export default function Header({ currentUser, onOpenProfile, onOpenHome, onOpenSupport, onOpenCheckIn, onOpenRecommendations, onLogout, busy, activeView }) {
+export default function Header({ currentUser, onOpenProfile, onOpenHome, onOpenSupport, onOpenCheckIn, onOpenRecommendations, onOpenFreeChat, onLogout, busy, activeView }) {
     const isHomeView = activeView === "home";
     const isSupportView = activeView === "support";
     const isProfileView = activeView === "profile";
     const isCheckInView = activeView === "checkin";
     const isRecommendationsView = activeView === "recommendations";
+    const isFreeChatView = activeView === "freechat";
     const initials = (currentUser?.name || "U").trim().charAt(0).toUpperCase();
 
     return (
@@ -77,6 +78,14 @@ export default function Header({ currentUser, onOpenProfile, onOpenHome, onOpenS
                             disabled={busy}
                         >
                             Recommendations
+                        </button>
+                        <button
+                            style={{ ...(isFreeChatView ? styles.btnPrimary : styles.btnGhost), ...styles.navBtn }}
+                            className="ghost-button"
+                            onClick={onOpenFreeChat}
+                            disabled={busy}
+                        >
+                            Free Chat
                         </button>
                         <button
                             style={{ ...(isProfileView ? styles.btnPrimary : styles.btnGhost), ...styles.navBtn }}
