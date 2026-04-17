@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { API_BASE, getFriendlyMessage } from "../utils/appHelpers";
 
@@ -16,14 +16,6 @@ function formatTime(ts) {
     } catch {
         return "";
     }
-}
-
-function getGreeting(now = new Date()) {
-    const hour = now.getHours();
-    if (hour >= 5 && hour < 12) return "Good morning";
-    if (hour >= 12 && hour < 17) return "Good afternoon";
-    if (hour >= 17 && hour < 21) return "Good evening";
-    return "Good night";
 }
 
 function formatFullDate(date = new Date()) {
@@ -86,9 +78,11 @@ export default function FreeChatScreen() {
     const inputRef = useRef(null);
 
     const quickActions = useMemo(() => DEFAULT_QUICK_ACTIONS, []);
-    const greeting = useMemo(() => getGreeting(now), [now]);
     const todayFull = useMemo(() => formatFullDate(now), [now]);
-    const activeMessages = messagesBySession[activeSessionId] || [];
+    const activeMessages = useMemo(
+        () => messagesBySession[activeSessionId] || [],
+        [messagesBySession, activeSessionId]
+    );
     const hasConversation = activeMessages.length > 0;
 
     useEffect(() => {
@@ -125,11 +119,7 @@ export default function FreeChatScreen() {
 
     const sessionCount = sessions.length;
 
-    useEffect(() => {
-        loadSessions();
-    }, []);
-
-    async function loadSessions() {
+    const loadSessions = useCallback(async () => {
         try {
             setIsLoadingSessions(true);
             setError("");
@@ -155,7 +145,11 @@ export default function FreeChatScreen() {
         } finally {
             setIsLoadingSessions(false);
         }
-    }
+    }, []);
+
+    useEffect(() => {
+        loadSessions();
+    }, [loadSessions]);
 
     async function loadSessionMessages(sessionId) {
         try {

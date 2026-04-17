@@ -158,7 +158,6 @@ function MetricBand({ title, average, latest, accent }) {
 function WeeklyTrendPanel({ entries, loading, error, onRetry }) {
     const recentEntries = useMemo(() => getRecentEntries(entries, 5), [entries]);
     const moodFrequency = useMemo(() => summarizeMoodFrequency(recentEntries), [recentEntries]);
-    const stressValues = useMemo(() => recentEntries.map((entry) => Number(entry.stressLevel || 0)), [recentEntries]);
     const energyValues = useMemo(() => recentEntries.map((entry) => Number(entry.energyLevel || 0)), [recentEntries]);
     const sleepValues = useMemo(() => recentEntries.map((entry) => Number(entry.sleepQuality || 0)), [recentEntries]);
 
