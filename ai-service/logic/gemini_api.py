@@ -1,3 +1,4 @@
+import logging
 import os
 
 import httpx
@@ -7,6 +8,7 @@ GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 DEFAULT_GEMINI_MODEL = os.getenv("APP_GEMINI_MODEL", "gemini-2.5-flash")
 DEFAULT_EMBEDDING_MODEL = os.getenv("APP_GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
 GEMINI_DISABLED_VALUES = {"", "mock-key", "mock-key-for-local-testing"}
+logger = logging.getLogger(__name__)
 
 
 def get_gemini_api_key() -> str:
@@ -84,7 +86,15 @@ async def generate_text(prompt: str) -> str:
                 ]
             },
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.exception(
+                "Gemini generateContent failed with status %s. Body: %s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            raise
         payload = response.json()
 
     candidates = payload.get("candidates", [])

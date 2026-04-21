@@ -1,3 +1,5 @@
+import logging
+
 from dotenv import load_dotenv
 
 from logic.decision_logic import ImpactLevel, IndicatorLevel
@@ -6,6 +8,7 @@ from logic.rag import retrieve_context
 
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 MOOD_KEYWORDS = [
@@ -150,23 +153,14 @@ async def generate_personalized_response(
             ai_message = await generate_text(f"{system_prompt}\nUser message:\n{user_message}")
             generation_source = "gemini"
     except Exception as exc:
-        error_msg = str(exc)
-        if "401" in error_msg or "API key" in error_msg:
-            ai_message = _build_personalized_fallback_message(
-                exact_mood=exact_mood,
-                intensity=intensity,
-                history=history,
-                time_of_day=time_of_day,
-                rag_context=rag_context,
-            )
-        else:
-            ai_message = _build_personalized_fallback_message(
-                exact_mood=exact_mood,
-                intensity=intensity,
-                history=history,
-                time_of_day=time_of_day,
-                rag_context=rag_context,
-            )
+        logger.exception("Gemini recommendation generation failed; using fallback response.")
+        ai_message = _build_personalized_fallback_message(
+            exact_mood=exact_mood,
+            intensity=intensity,
+            history=history,
+            time_of_day=time_of_day,
+            rag_context=rag_context,
+        )
 
     dashboard_suggestions = []
     exact_mood_lower = exact_mood.lower()
