@@ -1,0 +1,6 @@
+detected_emotions,mental_status,expected_impact
+"joy|calm","motivated|focused",low
+"stressed|tired","stress|fatigue",moderate
+"anxious|overwhelmed","burnout|anxiety",high
+"happy|grateful","stable",low
+"worried|sad","worried|stress",moderate

@@ -1410,6 +1410,25 @@ textarea:focus-visible {
   margin-top: 0.7rem;
 }
 
+.free-chat-analysis-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 174, 199, 0.24);
+  background: rgba(124, 201, 178, 0.12);
+  color: #3b655b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.free-chat-analysis-chip small {
+  color: #66808b;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+
 .free-chat-source {
   display: inline-flex;
   align-items: center;

@@ -1,6 +1,7 @@
 package com.sliit.tg.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sliit.tg.dto.AiRecommendationRequest;
 import com.sliit.tg.dto.AiRecommendationResult;
 import com.sliit.tg.model.MoodEntry;
@@ -14,6 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalTime;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,10 @@ public class AiRecommendationService {
     private static final Logger logger = LoggerFactory.getLogger(AiRecommendationService.class);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm a", Locale.US);
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String generateUrl;
 
@@ -59,11 +64,24 @@ public class AiRecommendationService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                logger.warn("AI recommendation service returned status {} from {}", response.statusCode(), generateUrl);
+                logger.warn(
+                        "AI recommendation service returned status {} from {} with body: {}",
+                        response.statusCode(),
+                        generateUrl,
+                        response.body()
+                );
                 return Optional.empty();
             }
 
-            return Optional.ofNullable(objectMapper.readValue(response.body(), AiRecommendationResult.class));
+            JsonNode payloadNode = objectMapper.readTree(response.body());
+            JsonNode aiResponseNode = payloadNode.path("ai_response");
+
+            if (aiResponseNode.isMissingNode() || aiResponseNode.isNull()) {
+                logger.warn("AI recommendation service response did not include ai_response payload.");
+                return Optional.empty();
+            }
+
+            return Optional.ofNullable(objectMapper.treeToValue(aiResponseNode, AiRecommendationResult.class));
         } catch (Exception e) {
             logger.warn("AI recommendation service call failed. Falling back to rule-based recommendations.", e);
             return Optional.empty();

@@ -12,6 +12,11 @@ from logic.response_generator import (
     generate_chat_response,
     generate_personalized_response,
 )
+from logic.mental_health_model import (
+    MentalHealthModelUnavailable,
+    model_available,
+    predict_statement,
+)
 
 
 router = APIRouter()
@@ -37,6 +42,17 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     ai_response: str
+
+
+class MentalHealthPredictRequest(BaseModel):
+    statement: str
+
+
+class MentalHealthPredictResponse(BaseModel):
+    status: str
+    confidence: float
+    top_classes: list[dict]
+    source: str
 
 
 class InteractionResponse(BaseModel):
@@ -76,3 +92,11 @@ async def chat_endpoint(req: ChatRequest):
     messages_dicts = [{"role": m.role, "content": m.content} for m in req.messages]
     response = await generate_chat_response(messages_dicts)
     return ChatResponse(ai_response=response)
+
+
+@router.post("/mental-health/predict", response_model=MentalHealthPredictResponse)
+async def mental_health_predict(req: MentalHealthPredictRequest):
+    if not model_available():
+        raise MentalHealthModelUnavailable("Mental health model artifacts are not available.")
+    result = predict_statement(req.statement)
+    return MentalHealthPredictResponse(**result)

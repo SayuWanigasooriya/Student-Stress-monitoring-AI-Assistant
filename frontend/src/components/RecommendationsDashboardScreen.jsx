@@ -107,7 +107,15 @@ function getRecommendationTypeLabel(type) {
     return type || "Support";
 }
 
-function getRecommendationModeMeta(source) {
+function getRecommendationModeMeta(source, isLoading) {
+    if (isLoading) {
+        return {
+            label: "Loading...",
+            detail: "We’re fetching the latest recommendation mode and support signals.",
+            className: "recommendation-source-badge is-loading",
+        };
+    }
+
     if (String(source || "").toLowerCase() === "gemini") {
         return {
             label: "Gemini Live",
@@ -244,7 +252,7 @@ export default function RecommendationsDashboardScreen({ currentUser }) {
 
     const latestEntries = dashboard?.recentMoods || [];
     const recommendations = dashboard?.recommendations || [];
-    const recommendationMode = getRecommendationModeMeta(dashboard?.recommendationSource);
+    const recommendationMode = getRecommendationModeMeta(dashboard?.recommendationSource, loading);
     const primaryRecommendation = recommendations[0] || null;
     const secondaryRecommendations = recommendations.slice(1);
 

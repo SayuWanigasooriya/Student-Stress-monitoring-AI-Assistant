@@ -34,5 +34,12 @@ def health_check():
     return {"status": "ok"}
 
 
+@app.get("/mental-health/health")
+def mental_health_health():
+    from logic.mental_health_model import model_available
+
+    return {"status": "ok" if model_available() else "missing_model"}
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
