@@ -5,6 +5,7 @@ import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import com.sliit.tg.dto.EmotionResponse;
 import com.sliit.tg.dto.GeminiReply;
+import com.sliit.tg.dto.IndicatorResponse;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.MoodEntry;
 import org.slf4j.Logger;
@@ -118,8 +119,9 @@ Rules:
                                 List<ChatMessage> history,
                                 String userMessage,
                                 Map<String, Object> summary,
-                                EmotionResponse emotionResult) {
-        // The prompt blends three things: topic context, completed assessment context, and live emotion context.
+                                EmotionResponse emotionResult,
+                                IndicatorResponse indicatorResult) {
+        // The prompt blends topic context, completed assessment context, emotion, and indicator classification.
         StringBuilder prompt = new StringBuilder();
 
         prompt.append(buildSystemPrompt(topicCode)).append("\n\n");
@@ -143,6 +145,13 @@ Rules:
             }
 
             prompt.append("\n");
+        }
+
+        if (indicatorResult != null && indicatorResult.getLabel() != null) {
+            prompt.append("Detected mental health indicator: ").append(indicatorResult.getLabel()).append("\n");
+            prompt.append("Indicator confidence: ").append(indicatorResult.getConfidence()).append("\n");
+            prompt.append("Use the indicator classification as risk/context signal, but do not diagnose the user.\n");
+            prompt.append("If the indicator suggests serious distress, self-harm, or suicidal ideation, respond with care, encourage immediate trusted support, and suggest local emergency help if there is immediate danger.\n\n");
         }
 
         String normalizedEmotion = "unknown";
@@ -195,6 +204,7 @@ CRITICAL RULES:
 - Do not force the same recommendations every time.
 - Do not automatically repeat Pomodoro, 20-minute tasks, or 3-item lists unless clearly relevant.
 - Use the summary as background context, but do not let it dominate the reply when the user's emotion is strong.
+- Use the indicator classification as additional context for risk and support needs.
 - If the user sounds highly emotional, prioritize empathy first, practical advice second.
 - Write in plain natural text only.
 - Do not use markdown formatting like **, *, bullets, or headings.
@@ -226,8 +236,9 @@ Emotion-specific priority:
 
         prompt.append("Reply rules:\n");
         prompt.append("- Be warm, supportive, and practical.\n");
-        prompt.append("- Use both the assessment context and detected emotion.\n");
+        prompt.append("- Use the assessment context, detected emotion, and detected mental health indicator.\n");
         prompt.append("- Do not ignore the user's emotional state.\n");
+        prompt.append("- Do not diagnose the user from the indicator label.\n");
         prompt.append("- If emotion is strong, respond to feelings before giving structured advice.\n");
         prompt.append("- Avoid repeating the exact same recommendations unless clearly relevant.\n");
         prompt.append("- If the user sounds overwhelmed, break help into the smallest next step.\n");

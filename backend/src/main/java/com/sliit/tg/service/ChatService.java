@@ -4,6 +4,7 @@ import com.sliit.tg.dto.ChatSessionSummaryResponse;
 import com.sliit.tg.dto.ChatMessageResponse;
 import com.sliit.tg.dto.EmotionResponse;
 import com.sliit.tg.dto.GeminiReply;
+import com.sliit.tg.dto.IndicatorResponse;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.repo.ChatMessageRepository;
@@ -21,15 +22,18 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final GeminiService geminiService;
     private final EmotionService emotionService;
+    private final IndicatorService indicatorService;
 
     public ChatService(ChatSessionRepository chatSessionRepository,
                        ChatMessageRepository chatMessageRepository,
                        GeminiService geminiService,
-                       EmotionService emotionService) {
+                       EmotionService emotionService,
+                       IndicatorService indicatorService) {
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.geminiService = geminiService;
         this.emotionService = emotionService;
+        this.indicatorService = indicatorService;
     }
 
     public ChatSession createSession(String topicCode) {
@@ -83,15 +87,17 @@ public class ChatService {
         ChatMessage userMessage = new ChatMessage(session, "user", message);
         chatMessageRepository.save(userMessage);
 
-        // The chat reply is shaped by both the detected emotion and the structured guidance summary.
+        // The chat reply is shaped by emotion, mental health indicator, and the structured guidance summary.
         EmotionResponse emotionResult = emotionService.detectEmotion(message);
+        IndicatorResponse indicatorResult = indicatorService.detectIndicator(message);
 
         GeminiReply reply = geminiService.getReply(
                 session.getTopicCode(),
                 history,
                 message,
                 summary,
-                emotionResult
+                emotionResult,
+                indicatorResult
         );
 
         ChatMessage botMessage = new ChatMessage(session, "bot", reply.text());

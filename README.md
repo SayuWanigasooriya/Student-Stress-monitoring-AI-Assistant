@@ -23,7 +23,8 @@ The chat flow combines:
 
 - conversation history
 - guided-session summary
-- emotion detection from the Python emotion API
+- emotion detection from the Python emotion service
+- mental health indicator classification from the Python indicator service
 - Gemini-based reply generation with safe fallback behavior
 
 The daily check-in flow stores mood entries and generates:
@@ -55,7 +56,7 @@ Location:
 
 - [backend](/Users/sandarunipuna/Documents/Projects/stress-monitoring-ai-assistant/backend)
 
-### Emotion API
+### Emotion Service
 
 - Python 3
 - FastAPI
@@ -65,14 +66,26 @@ Location:
 
 Location:
 
-- [emotion-api](/Users/sandarunipuna/Documents/Projects/stress-monitoring-ai-assistant/emotion-api)
+- [ml-services/emotion-service](ml-services/emotion-service)
+
+### Indicator Service
+
+- Python 3
+- FastAPI
+- Uvicorn
+- scikit-learn
+- NLTK
+
+Location:
+
+- [ml-services/indicator-service](ml-services/indicator-service)
 
 ## Project structure
 
 ```text
 stress-monitoring-ai-assistant/
 ├── backend/
-├── emotion-api/
+├── ml-services/
 ├── frontend/
 └── README.md
 ```
@@ -136,7 +149,8 @@ SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/stress_monitoring_ai_assistant
 SPRING_DATASOURCE_USERNAME=root
 SPRING_DATASOURCE_PASSWORD=root123
 APP_CORS_ALLOWED_ORIGINS=http://localhost:5173
-APP_EMOTION_API_URL=http://127.0.0.1:8001/predict-emotion
+APP_EMOTION_API_URL=http://127.0.0.1:8001/predict
+APP_INDICATOR_API_URL=http://127.0.0.1:8002/predict
 APP_GEMINI_MODEL=gemini-2.5-flash
 GEMINI_API_KEY=your_key_here
 ```
@@ -149,7 +163,8 @@ Notes:
 
 - `GEMINI_API_KEY` is optional for app startup.
 - Guided chat and daily insights still run with fallback behavior when Gemini is unavailable.
-- The emotion API is expected at `http://127.0.0.1:8001/predict-emotion`.
+- The emotion service is expected at `http://127.0.0.1:8001/predict`.
+- The indicator service is expected at `http://127.0.0.1:8002/predict`.
 
 ## Prerequisites
 
@@ -169,15 +184,23 @@ Run this in MySQL:
 CREATE DATABASE stress_monitoring_ai_assistant_db;
 ```
 
-### 2. Start the emotion API
+### 2. Start the emotion service
 
 ```bash
-cd /Users/sandarunipuna/Documents/Projects/stress-monitoring-ai-assistant/emotion-api
-python3 -m pip install fastapi uvicorn transformers torch
-python3 -m uvicorn main:app --host 127.0.0.1 --port 8001 --reload
+cd ml-services/emotion-service
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-### 3. Start the backend
+### 3. Start the indicator service
+
+```bash
+cd ml-services/indicator-service
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --host 127.0.0.1 --port 8002 --reload
+```
+
+### 4. Start the backend
 
 ```bash
 cd /Users/sandarunipuna/Documents/Projects/stress-monitoring-ai-assistant/backend
@@ -186,7 +209,8 @@ export SPRING_DATASOURCE_URL='jdbc:mysql://localhost:3306/stress_monitoring_ai_a
 export SPRING_DATASOURCE_USERNAME=root
 export SPRING_DATASOURCE_PASSWORD=root123
 export APP_CORS_ALLOWED_ORIGINS=http://localhost:5173
-export APP_EMOTION_API_URL=http://127.0.0.1:8001/predict-emotion
+export APP_EMOTION_API_URL=http://127.0.0.1:8001/predict
+export APP_INDICATOR_API_URL=http://127.0.0.1:8002/predict
 export APP_GEMINI_MODEL=gemini-2.5-flash
 export GEMINI_API_KEY=your_key_here
 mvn spring-boot:run
@@ -196,7 +220,7 @@ Backend URL:
 
 - [http://localhost:8080](http://localhost:8080)
 
-### 4. Start the frontend
+### 5. Start the frontend
 
 ```bash
 cd /Users/sandarunipuna/Documents/Projects/stress-monitoring-ai-assistant/frontend
@@ -273,7 +297,7 @@ npm run build
 ## Current limitations
 
 - Authentication is still basic and should be upgraded with password hashing and stronger auth handling.
-- The emotion API and Gemini integration depend on external services and credentials.
+- The emotion service, indicator service, and Gemini integration depend on external services and credentials.
 - Daily check-in insights are partly fallback-driven when Gemini is unavailable.
 - Frontend state is still centralized in `App.jsx` and can be refactored further.
 

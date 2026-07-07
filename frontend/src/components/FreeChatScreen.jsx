@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { API_BASE, getFriendlyMessage } from "../utils/appHelpers";
 
-const AI_SERVICE_BASE = import.meta.env.VITE_AI_SERVICE_BASE_URL || "http://127.0.0.1:8000";
 const DEFAULT_QUICK_ACTIONS = [
     { id: "badDay", label: "I had a bad day", message: "I had a bad day." },
     { id: "relaxMind", label: "Relax my mind", message: "I want to relax my mind." },
@@ -119,15 +118,6 @@ export default function FreeChatScreen() {
     }, [sessions]);
 
     const sessionCount = sessions.length;
-
-    const updateMessageAnalysis = useCallback((sessionId, messageId, analysis) => {
-        setMessagesBySession((prev) => ({
-            ...prev,
-            [sessionId]: (prev[sessionId] || []).map((message) => (
-                message.id === messageId ? { ...message, mentalHealthAnalysis: analysis } : message
-            )),
-        }));
-    }, []);
 
     const loadSessions = useCallback(async () => {
         try {
@@ -254,25 +244,6 @@ export default function FreeChatScreen() {
         setSessions((prev) => prev.map((session) => (session.sessionId === sessionId ? updater(session) : session)));
     }
 
-    const requestMentalHealthAnalysis = useCallback(async (sessionId, messageId, text) => {
-        try {
-            const response = await fetch(`${AI_SERVICE_BASE}/api/v1/mental-health/predict`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ statement: text }),
-            });
-
-            if (!response.ok) {
-                return;
-            }
-
-            const data = await response.json();
-            updateMessageAnalysis(sessionId, messageId, data);
-        } catch {
-            // Keep the chat usable if the analysis endpoint is unavailable.
-        }
-    }, [updateMessageAnalysis]);
-
     async function sendMessage(text) {
         const trimmed = text.trim();
         if (!trimmed || isSending || !activeSessionId) return;
@@ -286,11 +257,9 @@ export default function FreeChatScreen() {
             content: trimmed,
             ts: Date.now(),
             source: "user",
-            mentalHealthAnalysis: null,
         };
 
         appendMessageToSession(activeSessionId, userMessage);
-        requestMentalHealthAnalysis(activeSessionId, userMessage.id, trimmed);
 
         updateSessionLocally(activeSessionId, (session) => ({
             ...session,
@@ -357,45 +326,6 @@ export default function FreeChatScreen() {
         }
         if (message.source === "system") return { label: "System", className: "free-chat-source is-system" };
         return null;
-    }
-
-    function formatAnalysisConfidence(value) {
-        const score = Number(value);
-        if (Number.isNaN(score)) return "";
-        return `${Math.round(score * 100)}% confidence`;
-    }
-
-    function inferTone(text) {
-        const normalized = String(text || "").toLowerCase();
-        const positiveCues = ["good", "great", "better", "happy", "calm", "fine", "okay", "ok", "relaxed", "energetic"];
-        const negativeCues = ["sad", "hopeless", "depressed", "anxious", "stress", "stressed", "overwhelmed", "tired", "bad"];
-
-        if (positiveCues.some((cue) => normalized.includes(cue))) {
-            return "positive";
-        }
-        if (negativeCues.some((cue) => normalized.includes(cue))) {
-            return "negative";
-        }
-        return "neutral";
-    }
-
-    function formatSupportSignal(status, text) {
-        const normalized = String(status || "").trim().toLowerCase();
-        const inferredTone = inferTone(text);
-
-        if (inferredTone === "positive" && ["depression", "suicidal", "stress", "anxiety"].includes(normalized)) {
-            return "General wellbeing-related";
-        }
-
-        if (!normalized) return "General wellbeing-related";
-        if (normalized === "anxiety") return "Anxiety-related";
-        if (normalized === "depression") return "Low-mood related";
-        if (normalized === "suicidal") return "High-risk distress related";
-        if (normalized === "bipolar") return "Mood-instability related";
-        if (normalized === "stress") return "Stress-related";
-        if (normalized === "personality disorder") return "Interpersonal-strain related";
-        if (normalized === "normal") return "General wellbeing-related";
-        return `${status}-related`;
     }
 
     return (
@@ -498,12 +428,6 @@ export default function FreeChatScreen() {
                                             </div>
                                             <p>{message.content}</p>
                                             <div className="free-chat-meta">
-                                                {message.role === "user" && message.mentalHealthAnalysis ? (
-                                                    <span className="free-chat-analysis-chip">
-                                                        Support signal: {formatSupportSignal(message.mentalHealthAnalysis.status, message.content)}
-                                                        <small>{formatAnalysisConfidence(message.mentalHealthAnalysis.confidence)}</small>
-                                                    </span>
-                                                ) : null}
                                                 {sourceMeta ? <span className={sourceMeta.className}>{sourceMeta.label}</span> : null}
                                             </div>
                                         </div>

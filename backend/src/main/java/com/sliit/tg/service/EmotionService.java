@@ -18,7 +18,7 @@ public class EmotionService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     public EmotionService(
-            @Value("${app.emotion.api-url:http://127.0.0.1:8001/predict-emotion}") String emotionApiUrl
+            @Value("${app.emotion.api-url:http://127.0.0.1:8001/predict}") String emotionApiUrl
     ) {
         this.emotionApiUrl = emotionApiUrl;
     }

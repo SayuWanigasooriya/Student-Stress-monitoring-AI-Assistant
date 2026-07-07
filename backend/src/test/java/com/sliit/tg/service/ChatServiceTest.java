@@ -2,6 +2,7 @@ package com.sliit.tg.service;
 
 import com.sliit.tg.dto.EmotionResponse;
 import com.sliit.tg.dto.GeminiReply;
+import com.sliit.tg.dto.IndicatorResponse;
 import com.sliit.tg.model.ChatMessage;
 import com.sliit.tg.model.ChatSession;
 import com.sliit.tg.repo.ChatMessageRepository;
@@ -34,6 +35,8 @@ class ChatServiceTest {
     private GeminiService geminiService;
     @Mock
     private EmotionService emotionService;
+    @Mock
+    private IndicatorService indicatorService;
 
     @InjectMocks
     private ChatService chatService;
@@ -56,13 +59,17 @@ class ChatServiceTest {
         EmotionResponse emotion = new EmotionResponse();
         emotion.setEmotion("sadness");
         emotion.setScore(0.88);
+        IndicatorResponse indicator = new IndicatorResponse();
+        indicator.setLabel("Stress");
+        indicator.setConfidence(0.91);
 
         List<ChatMessage> history = List.of(new ChatMessage(session, "bot", "How are you feeling today?"));
 
         when(chatSessionRepository.findById(1L)).thenReturn(Optional.of(session));
         when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(1L)).thenReturn(history);
         when(emotionService.detectEmotion("I feel overwhelmed")).thenReturn(emotion);
-        when(geminiService.getReply("ANXIETY", history, "I feel overwhelmed", Map.of("summary", "demo"), emotion))
+        when(indicatorService.detectIndicator("I feel overwhelmed")).thenReturn(indicator);
+        when(geminiService.getReply("ANXIETY", history, "I feel overwhelmed", Map.of("summary", "demo"), emotion, indicator))
                 .thenReturn(new GeminiReply("Let's slow this down together.", "gemini", null));
 
         GeminiReply reply = chatService.sendMessage(1L, "I feel overwhelmed", Map.of("summary", "demo"));
